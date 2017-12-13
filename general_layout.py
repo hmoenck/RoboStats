@@ -46,12 +46,20 @@ class window(QMainWindow):
         openFile.setStatusTip('Open File')
         openFile.triggered.connect(self.file_open)
 
+        printPun = QAction("&Print a pun", self)
+        printPun.setShortcut("Ctrl+P")
+        printPun.setStatusTip('very bad jokes')
+        printPun.triggered.connect(self.print_pun)
+        
         self.statusBar()
 
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('&File')
         fileMenu.addAction(extractAction)
         fileMenu.addAction(openFile)
+        
+        extraMenu = mainMenu.addMenu('&Extra')
+        extraMenu.addAction(printPun)
         
         
 
@@ -223,6 +231,13 @@ class window(QMainWindow):
     def do_nothing(self): 
         ''' does nothing '''
         print('did nothing')
+        
+    def print_pun(self): 
+        f = open('puns.txt', 'r')
+        lines = list(f)
+        idx = np.random.randint(0, len(lines))
+        print(lines[idx])
+        f.close()
         
     def save_all(self): 
         ''' saves cleaned data to csv, notepad to txt'''
