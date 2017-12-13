@@ -2,6 +2,13 @@ import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+import numpy as np
+import pandas as pd
+from standard_stats import means_and_vars
+from standard_stats import handle_data #TODO: Generealize
+
+from plotWindow import MyPlotWindow
+
 
 image = '/home/claudia/Bilder/other/frida.jpg'
 
@@ -16,7 +23,12 @@ class MyStream(QObject):
 
 class window(QMainWindow):
    
-    NOTES_FILE = 'Notes.txt'
+    NOTES_SAVE_FILE = 'Notes.txt'        # default name for file created from notepad TODO: allow customize
+    DATA_SAVE_FILE = 'Data.csv'
+    DATA_CLEAN = pd.DataFrame()     # a pandas df containing the data that will be worked with 
+    DATA_SPECIFICATIONS = {'start_time':0, 'stop_time':0} # dict that contains all user specificaton on data
+    DATA_FILE = ' '                 # name of the datafile (for reference)
+    TIME = 0                        # np.array conatining the time points (for setting the sliders)
 
     def __init__(self):
     
@@ -27,12 +39,12 @@ class window(QMainWindow):
         extractAction = QAction("&Exit", self)
         extractAction.setShortcut("Ctrl+Q")
         extractAction.setStatusTip('Leave The App')
-        extractAction.triggered.connect(self.do_nothing)
+        extractAction.triggered.connect(self.close_application)
 
         openFile = QAction("&Open File", self)
         openFile.setShortcut("Ctrl+O")
         openFile.setStatusTip('Open File')
-        openFile.triggered.connect(self.do_nothing)
+        openFile.triggered.connect(self.file_open)
 
         self.statusBar()
 
@@ -63,10 +75,10 @@ class window(QMainWindow):
         self.notesButtonSection = QHBoxLayout()
         
         self.SaveButton_notePad = QPushButton("Save")
-        self.SaveButton_notePad.clicked.connect(self.saveNotePad)
+        self.SaveButton_notePad.clicked.connect(self.save_NotePad)
         
         self.ClearButton_notePad = QPushButton("Clear")
-        self.ClearButton_notePad.clicked.connect(self.clearNotePad)
+        self.ClearButton_notePad.clicked.connect(self.clear_NotePad)
         
         self.notesButtonSection.addWidget(self.SaveButton_notePad)
         self.notesButtonSection.addWidget(self.ClearButton_notePad)
@@ -95,12 +107,12 @@ class window(QMainWindow):
         
         self.StartTimeSliderTitle = QLabel('Start')
         self.StartTimeSlider = QSlider(Qt.Horizontal)
-        self.StartTimeSlider.valueChanged.connect(self.do_nothing)
+        self.StartTimeSlider.valueChanged.connect(self.set_time)
         self.StartTime = QLineEdit()
         
         self.StopTimeSliderTitle = QLabel('Stop')
         self.StopTimeSlider = QSlider(Qt.Horizontal)
-        self.StopTimeSlider.valueChanged.connect(self.do_nothing)
+        self.StopTimeSlider.valueChanged.connect(self.set_time)
         self.StopTime = QLineEdit()
 
 
@@ -123,8 +135,14 @@ class window(QMainWindow):
 
         self.DataSettings = QPushButton('Settings')
         self.DataPrint = QPushButton('Print')
+        
         self.DataPlot = QPushButton('Plot')
+        self.DataPlot.clicked.connect(self.plot_trajectory)
+        
+        
         self.DataFreeze = QPushButton('Freeze')
+        self.DataFreeze.clicked.connect(self.on_freeze)
+        
 
         self.dataButtonsSection.addWidget(self.DataSettings)
         self.dataButtonsSection.addWidget(self.DataPrint)
@@ -166,9 +184,11 @@ class window(QMainWindow):
         #--------------------general Button Section----------------------
         self.generalButtonSection = QHBoxLayout()
         
-        self.GeneralSave = QPushButton('Save all')
+        self.SaveButton_general = QPushButton('Save all')
+        self.SaveButton_general.clicked.connect(self.save_all)
 
-        self.generalButtonSection.addWidget(self.GeneralSave)
+
+        self.generalButtonSection.addWidget(self.SaveButton_general)
 
         
         
@@ -195,9 +215,32 @@ class window(QMainWindow):
         self.home.setLayout(self.mainLayout)
         self.setCentralWidget(self.home)
         
+        
+    # ----------------------------------------------------- 
+    # Genereal functions
+    #-----------------------------------------------------
 
     def do_nothing(self): 
+        ''' does nothing '''
         print('did nothing')
+        
+    def save_all(self): 
+        ''' saves cleaned data to csv, notepad to txt'''
+        #TODO save stats results 
+        self.save_DataClean()
+        self.save_NotePad()
+        print('saved clean data to: ', self.DATA_SAVE_FILE)
+        print('saved notes to: ', self.NOTES_SAVE_FILE) 
+        
+    def close_application(self):
+        ''' Closes application without saving '''
+        choice = QMessageBox.question(self, 'Extract!','Close without saving?', \
+                 QMessageBox.Yes | QMessageBox.No)
+        if choice == QMessageBox.Yes:
+            print("Leaving")
+            sys.exit()
+        else:
+            pass
         
     # ----------------------------------------------------- 
     # Note Pad related functions
@@ -209,14 +252,100 @@ class window(QMainWindow):
         self.NotePad.moveCursor(QTextCursor.End)
         self.NotePad.insertPlainText(message)
         
-    def clearNotePad(self): 
+    def clear_NotePad(self): 
         ''' Clears all Notepad output'''
         self.NotePad.clear()
         
-    def saveNotePad(self): 
+    def save_NotePad(self): 
         ''' Saves all Notepad output to txt'''
-        with open(self.NOTES_FILE, 'w') as txt_file: 
+        with open(self.NOTES_SAVE_FILE, 'w') as txt_file: 
             txt_file.write(str(self.NotePad.toPlainText()))
+            
+            
+    # ----------------------------------------------------- 
+    # Data related functions
+    #-----------------------------------------------------    
+            
+    def file_open(self):
+        ''' opens a dialog and lets the user chose a csv datafile, 
+        this is then passed to the handle_data function and 
+        the global variables DATA_CLEAN, TIME, DATA_SPECIFICATIONS and 
+        DATA_NAME are initialized '''
+    
+        name = QFileDialog.getOpenFileName(self, 'Open File')
+        if not name.endswith('.csv'):
+        
+            print('File Type not allowed')
+            pass
+            
+        else: 
+            self.DATA_CLEAN = handle_data(name)         
+            self.TIME = self.DATA_CLEAN['time'].values
+            self.DATA_NAME = name
+            self.DATA_SPECIFICATIONS['start_time'] = self.TIME[0]
+            self.DATA_SPECIFICATIONS['stop_time'] = self.TIME[-1]
+            self.FileChosen.setText('File Chosen: ' + self.DATA_NAME[self.DATA_NAME.rfind('/')+1:])
+
+
+
+    def set_time(self):
+        ''' handles change of sliders'''
+    
+        start = self.StartTimeSlider.value()
+        self.StartTime.setText(str(np.round(self.TIME[start], 2)))
+        self.DATA_SPECIFICATIONS['start_time'] = start
+
+
+        stop = self.StopTimeSlider.value()
+        self.StopTime.setText(str(np.round(self.TIME[stop], 2)))
+        self.DATA_SPECIFICATIONS['stop_time'] = stop
+        
+        
+    def plot_trajectory(self):
+        ''' plots the trajectory in the chosen time range'''
+        if self.DATA_CLEAN.empty:
+            print('No File Chosen')
+            
+        else: 
+            #TODO This should be a little more general :)
+            t1 = self.DATA_SPECIFICATIONS['start_time']
+            t2 = self.DATA_SPECIFICATIONS['stop_time']
+            data2plot = np.vstack((self.DATA_CLEAN['x0'][t1: t2], self.DATA_CLEAN['y0'][t1:t2]))
+            plot_window = MyPlotWindow(data2plot)
+            plot_window.exec_()
+            
+    def save_DataClean(self): 
+        # TODO this never gets called alone, maybe single data save button?
+        self.DATA_CLEAN.to_csv(self.DATA_SAVE_FILE)
+        
+        
+    def on_freeze(self):
+        ''' freezs data settings '''
+        if self.DataFreeze.text() == 'Freeze':
+            self.CheckRobo.setEnabled(False)
+            self.CheckFish.setEnabled(False)
+            self.StartTimeSliderTitle.setEnabled(False)
+            self.StartTimeSlider.setEnabled(False)
+            self.StartTime.setEnabled(False)
+            self.StopTimeSliderTitle.setEnabled(False)
+            self.StopTimeSlider.setEnabled(False)
+            self.StopTime.setEnabled(False)
+            
+            self.DataFreeze.setText('Unfreeze')
+        else: 
+            self.CheckRobo.setEnabled(True)
+            self.CheckFish.setEnabled(True)
+            self.StartTimeSliderTitle.setEnabled(True)
+            self.StartTimeSlider.setEnabled(True)
+            self.StartTime.setEnabled(True)
+            self.StopTimeSliderTitle.setEnabled(True)
+            self.StopTimeSlider.setEnabled(True)
+            self.StopTime.setEnabled(True)
+            
+            self.DataFreeze.setText('Freeze')
+            
+
+
 
 if __name__ == "__main__":
 
