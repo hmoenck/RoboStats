@@ -4,8 +4,8 @@ from PyQt4.QtGui import *
 
 import numpy as np
 import pandas as pd
-from standard_stats import means_and_vars
-from standard_stats import handle_data #TODO: Generealize
+from basic_stats import basic_stats
+from handle_data import handle_data #TODO: Generealize
 
 from plotWindow import MyPlotWindow
 
@@ -26,7 +26,9 @@ class window(QMainWindow):
     NOTES_SAVE_FILE = 'Notes.txt'        # default name for file created from notepad TODO: allow customize
     DATA_SAVE_FILE = 'Data.csv'
     DATA_CLEAN = pd.DataFrame()     # a pandas df containing the data that will be worked with 
-    DATA_SPECIFICATIONS = {'start_time':0, 'stop_time':0} # dict that contains all user specificaton on data
+    DATA_SPECIFICATIONS = {'start_time':0, 'stop_time':0, 'agent_0': True, 'agent_1': True} # dict that contains all uselaur specificaton on data
+    BASIC_STATS_RESULTS = {}
+    BASIC_STATS_INFO = {}
     DATA_FILE = ' '                 # name of the datafile (for reference)
     TIME = 0                        # np.array conatining the time points (for setting the sliders)
 
@@ -108,10 +110,10 @@ class window(QMainWindow):
         self.FileChosen = QLabel('File Chosen: None')
         
         self.CheckRobo = QCheckBox('Robo')
-        self.CheckRobo.stateChanged.connect(self.do_nothing)
+        self.CheckRobo.stateChanged.connect(self.set_agents)
         
         self.CheckFish = QCheckBox('Fish')
-        self.CheckFish.stateChanged.connect(self.do_nothing)
+        self.CheckFish.stateChanged.connect(self.set_agents)
         
         self.StartTimeSliderTitle = QLabel('Start')
         self.StartTimeSlider = QSlider(Qt.Horizontal)
@@ -142,7 +144,9 @@ class window(QMainWindow):
         self.dataButtonsSection = QHBoxLayout()
 
         self.DataSettings = QPushButton('Settings')
-        self.DataPrint = QPushButton('Print')
+        
+        self.DataPrint = QPushButton('Print Info')
+        self.DataPrint.clicked.connect(self.data_print)
         
         self.DataPlot = QPushButton('Plot')
         self.DataPlot.clicked.connect(self.plot_trajectory)
@@ -316,6 +320,19 @@ class window(QMainWindow):
         self.DATA_SPECIFICATIONS['stop_time'] = stop
         
         
+    def set_agents(self): 
+        #TODO find consistnt labelling for all agents:
+        if self.CheckFish.isChecked() == True:
+            self.DATA_SPECIFICATIONS['agent_0'] = True
+        else: 
+            self.DATA_SPECIFICATIONS['agent_0'] = False
+            
+        if self.CheckRobo.isChecked() == True:
+            self.DATA_SPECIFICATIONS['agent_1'] = True
+        else: 
+            self.DATA_SPECIFICATIONS['agent_1'] = False
+
+        
     def plot_trajectory(self):
         ''' plots the trajectory in the chosen time range'''
         if self.DATA_CLEAN.empty:
@@ -323,11 +340,19 @@ class window(QMainWindow):
             
         else: 
             #TODO This should be a little more general :)
-            t1 = self.DATA_SPECIFICATIONS['start_time']
-            t2 = self.DATA_SPECIFICATIONS['stop_time']
-            data2plot = np.vstack((self.DATA_CLEAN['x0'][t1: t2], self.DATA_CLEAN['y0'][t1:t2]))
-            plot_window = MyPlotWindow(data2plot)
+            #t1 = self.DATA_SPECIFICATIONS['start_time']
+            #t2 = self.DATA_SPECIFICATIONS['stop_time']
+            #data2plot = np.vstack((self.DATA_CLEAN['x0'][t1: t2], self.DATA_CLEAN['y0'][t1:t2]))
+            plot_window = MyPlotWindow(self.DATA_CLEAN, self.DATA_SPECIFICATIONS)
             plot_window.exec_()
+            
+    def data_print(self): 
+        if self.DATA_CLEAN.empty: 
+            print('no file chosen')
+        else: 
+            self.BASIC_STATS_RESULTS = basic_stats(self.DATA_CLEAN, self.DATA_SPECIFICATIONS)
+            for key in self.BASIC_STATS_RESULTS: 
+                print(key + ': ', np.round(self.BASIC_STATS_RESULTS[key],3))
             
     def save_DataClean(self): 
         # TODO this never gets called alone, maybe single data save button?
