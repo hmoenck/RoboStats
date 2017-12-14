@@ -5,14 +5,27 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
+import seaborn as sns
+sns.set()
+
 import random
+import numpy as np
 
 
 class MyPlotWindow(QtGui.QDialog):
-    def __init__(self, data, parent=None):
+    def __init__(self, data, data_info,  parent=None):
         super(MyPlotWindow, self).__init__(parent)
         
-        self.data = data
+        t0 = data_info['start_time']
+        t1 = data_info['stop_time']
+        
+        self.data2plot = {}
+        
+        for key in data_info: 
+            if key.find('agent') >= 0 and data_info[key] == True: 
+                idx = key[key.find('_')+1]
+                self.data2plot[key] = np.vstack((data['x'+idx][t0: t1], data['y'+idx][t0:t1]))
+        
 
         # a figure instance to plot on
         self.figure = Figure()
@@ -40,9 +53,7 @@ class MyPlotWindow(QtGui.QDialog):
         ''' plot some random stuff '''
         # random data
         #data = [random.random() for i in range(10)]
-        data_x = self.data[0,:]
-        data_y = self.data[1,:]
-        
+
         
         # create an axis
         ax = self.figure.add_subplot(111)
@@ -52,7 +63,10 @@ class MyPlotWindow(QtGui.QDialog):
 
         # plot data
         #ax.plot(data, '*-')
-        ax.plot(data_x, data_y)
+        for key in self.data2plot: 
+            ax.plot(self.data2plot[key][0,:], self.data2plot[key][1,:], label = key)
+       
+        ax.legend()
         
         # refresh canvas
         self.canvas.draw()
