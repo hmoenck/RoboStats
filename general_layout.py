@@ -9,6 +9,8 @@ from handle_data import handle_data #TODO: Generealize
 
 from plotWindow import MyPlotWindow
 
+from direction_correlation import direction_correlation #TODO only accepts 2 agents, TODO: how to save results?
+
 
 image = '/home/claudia/Bilder/other/frida.jpg'
 
@@ -166,10 +168,10 @@ class window(QMainWindow):
         self.statsSection = QGridLayout()
         
         self.SelectStats = QComboBox()
-        self.SelectStats.addItem('Method 1')
+        self.SelectStats.addItem('Identify Leader')
         self.SelectStats.addItem('Method 2')
         #self.cb.addItems(["Java", "C#", "Python"])
-        self.SelectStats.currentIndexChanged.connect(self.do_nothing)
+        self.SelectStats.currentIndexChanged.connect(self.select_stats)
         
         self.ParamInfoLabel = QLabel('Parameter Info')
         self.ParamInfo = QLineEdit()
@@ -183,8 +185,13 @@ class window(QMainWindow):
         self.statsButtonSection = QHBoxLayout()
         
         self.StatsSettings = QPushButton('Settings')
+        
         self.StatsPrint = QPushButton('Print')
+        self.StatsPrint.clicked.connect(self.print_stats)
+        
         self.StatsPlot = QPushButton('Plot')
+        self.StatsPlot.clicked.connect(self.plot_stats)
+        
         self.StatsSave = QPushButton('Save')
         
         self.statsButtonSection.addWidget(self.StatsSettings)
@@ -283,7 +290,7 @@ class window(QMainWindow):
             
     # ----------------------------------------------------- 
     # Data related functions
-    #-----------------------------------------------------    
+    #------------------------------------------------------    
             
     def file_open(self):
         ''' opens a dialog and lets the user chose a csv datafile, 
@@ -383,6 +390,37 @@ class window(QMainWindow):
             self.StopTime.setEnabled(True)
             
             self.DataFreeze.setText('Freeze')
+            
+    # ----------------------------------------------------- 
+    # stats  related functions
+    #------------------------------------------------------   
+    def select_stats(self): 
+        if self.SelectStats.currentText() == 'Identify Leader': 
+            self.ParamInfo.setText('Identify Leader')
+        else: 
+            pass
+
+            
+            
+    def plot_stats(self):
+        # TODO will open a window that shows the options for plotting, depending on which statistical analysis was performed
+        if self.SelectStats.currentText() == 'Identify Leader':
+            win = QMessageBox.information(self, 'Identify Leader', 'more text', 1)
+        else: 
+            win = QMessageBox.information(self, 'other', 'more text', 1)
+        
+    def print_stats(self): 
+        if self.SelectStats.currentText() == 'Identify Leader':
+            front, speed_center = direction_correlation(self.DATA_CLEAN)
+            #print(front)
+            print('# fames agent 0 leading: ', len(front[front == 0]))
+            print('# fames agent 1 leading: ', len(front[front == 1]))
+            print('median center speed agent 0 leading: ', np.round(np.median(speed_center[front[:len(front)-1] == 0]), 3))
+            print('median center speed agent 1 leading: ', np.round(np.median(speed_center[front[:len(front)-1]  == 1]), 3))
+
+        else: 
+            print('you should first decide what you want to do!')
+            
             
 
 
