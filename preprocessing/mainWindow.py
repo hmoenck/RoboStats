@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from tableWindow import tableWindow
 from timeWindow import timeWindow
+from coordinateWindow import coordinateWindow
 import settings.data_settings as ds
 
 class mainWindow(QtGui.QMainWindow):
@@ -69,7 +70,12 @@ class mainWindow(QtGui.QMainWindow):
             border.setObjectName(b)
             self.spaceLayout.addWidget(border, 0, j)
             self.Border_info.append(border)
+            
+        self.changeCoordsButton = QtGui.QPushButton('Change')
+        self.changeCoordsButton.setFixedWidth(100)
+        self.changeCoordsButton.clicked.connect(self.changeCoords)
 
+        self.spaceLayout.addWidget(self.changeCoordsButton)
         
         
         #------------------------------------------------------------
@@ -144,7 +150,15 @@ class mainWindow(QtGui.QMainWindow):
         
         self.time = timeWindow(self, t, f)
         self.time.show()   
-
+        
+    def changeCoords(self): 
+        borders = ['x_min', 'x_max', 'y_min', 'y_max']
+        coords = {}
+        for b in borders: 
+            coords[b] = self.INFO[b]
+            
+        self.coordinates = coordinateWindow(self, coords)
+        self.coordinates.show()  
 
     def update_dicts(self, dict1, dict2): 
     
