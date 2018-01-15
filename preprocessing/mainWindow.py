@@ -6,14 +6,21 @@ import numpy as np
 from tableWindow import tableWindow
 from timeWindow import timeWindow
 from coordinateWindow import coordinateWindow
+from plotWindow import plotWindow
+import smoothing 
+
+
 import settings.data_settings as ds
 
 class mainWindow(QtGui.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
-            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1}
+            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
             
     TMP_FILE = ' '
+    
+    AGENT_NAMES = []
+    SMOOTHING = ['None', 'MedFilter, k=5']
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
@@ -77,6 +84,37 @@ class mainWindow(QtGui.QMainWindow):
 
         self.spaceLayout.addWidget(self.changeCoordsButton)
         
+        #------------------------------------------------------------
+        # smooth layout
+        #------------------------------------------------------------
+        self.smoothLayout = QtGui.QHBoxLayout()
+
+        self.selectSmoothing = QtGui.QComboBox()
+        for s in self.SMOOTHING:    
+            self.selectSmoothing.addItem(s)
+
+        self.smoothButton = QtGui.QPushButton('Apply Smoothing')
+        self.smoothButton.clicked.connect(self.apply_smoothing)
+        
+        self.smoothLayout.addWidget(self.selectSmoothing)
+        self.smoothLayout.addWidget(self.smoothButton)
+        
+        
+        
+        #------------------------------------------------------------
+        # final layout
+        #------------------------------------------------------------
+        self.finalLayout = QtGui.QVBoxLayout()
+
+        
+        self.plotButton = QtGui.QPushButton('Plot')
+        self.plotButton.clicked.connect(self.plot_trajectory)
+        
+        self.saveButton = QtGui.QPushButton('Stats and save')
+        self.saveButton.clicked.connect(self.stats_and_save)
+        
+        self.finalLayout.addWidget(self.plotButton)
+        self.finalLayout.addWidget(self.saveButton)
         
         #------------------------------------------------------------
         # general layout
@@ -87,6 +125,10 @@ class mainWindow(QtGui.QMainWindow):
         self.mainLayout.addLayout(self.timeLayout)
         self.mainLayout.addWidget(self.HLine())
         self.mainLayout.addLayout(self.spaceLayout)
+        self.mainLayout.addWidget(self.HLine())
+        self.mainLayout.addLayout(self.smoothLayout)
+        self.mainLayout.addWidget(self.HLine())
+        self.mainLayout.addLayout(self.finalLayout)
          
 
         self.home = QtGui.QWidget()
@@ -123,6 +165,7 @@ class mainWindow(QtGui.QMainWindow):
         self.INFO['y_min'] = min(min(df['agent0_y'].values), min(df['agent1_y'].values))
         self.INFO['x_max'] = max(max(df['agent0_x'].values), max(df['agent1_x'].values))
         self.INFO['y_max'] = max(max(df['agent0_y'].values), max(df['agent1_y'].values))
+
         
         self.update_labels()
         
@@ -164,6 +207,48 @@ class mainWindow(QtGui.QMainWindow):
     
         for key in dict2: 
              dict1[key] = dict2[key]
+             
+             
+    def plot_trajectory(self): 
+        
+        r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
+        df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
+                
+        d = {}
+        start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
+        stop_idx = np.where(df['frames'].values == self.INFO['stop_frame'])[0][0]
+        for an in self.AGENT_NAMES: 
+            d[an] = (df[an + '_x'].values[start_idx:stop_idx], df[an + '_y'].values[start_idx:stop_idx])
+        
+        
+        self.trajectoryWindow = plotWindow(d, r)
+        self.trajectoryWindow.exec_()
+        
+    def stats_and_save(self): 
+        pass
+        
+        
+        
+    def apply_smoothing(self):
+        smooth = str(self.selectSmoothing.currentText())
+        if smooth == None: 
+            pass
+        else: 
+            df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
+            if smooth ==  'MedFilter, k=5': 
+                for an in self.AGENT_NAMES:
+                    df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
+                    df[an + '_y'] = smoothing.medfilt(df[an + '_y'].values)
+                    self.send_info('Trajectory is now smooth !')
+                    
+                    
+    def send_info(self, text): 
+        
+        msg = QtGui.QMessageBox()
+        msg.setIcon(QtGui.QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle("INFO")
+        retval = msg.exec_()
 
 if __name__ == "__main__":
     import sys
