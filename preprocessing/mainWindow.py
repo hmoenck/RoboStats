@@ -3,23 +3,22 @@
 from PyQt4 import QtGui, QtCore
 import pandas as pd
 import numpy as np
+import datetime
 from tableWindow import tableWindow
 from timeWindow import timeWindow
 from coordinateWindow import coordinateWindow
 from plotWindow import plotWindow
-import smoothing 
-
-
+import data_processing.smoothing as smoothing
+import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 
 class mainWindow(QtGui.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
-            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
+            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False, 'agent_names':[]}
             
     TMP_FILE = ' '
     
-    AGENT_NAMES = []
     SMOOTHING = ['None', 'MedFilter, k=5']
 
     def __init__(self, parent = None):
@@ -161,10 +160,11 @@ class mainWindow(QtGui.QMainWindow):
         self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])
         
         #TODO THIS PART HAS TO BE UPDATED FOR MORE THAN TWO AGENTS 
-        self.INFO['x_min'] = min(min(df['agent0_x'].values), min(df['agent1_x'].values))
-        self.INFO['y_min'] = min(min(df['agent0_y'].values), min(df['agent1_y'].values))
-        self.INFO['x_max'] = max(max(df['agent0_x'].values), max(df['agent1_x'].values))
-        self.INFO['y_max'] = max(max(df['agent0_y'].values), max(df['agent1_y'].values))
+        
+        self.INFO['x_min'] = min(min(df[an + '_x'].values) for an in self.INFO['agent_names'])
+        self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
+        self.INFO['x_max'] = max(max(df[an + '_x'].values) for an in self.INFO['agent_names'])
+        self.INFO['y_max'] = max(max(df[an + '_y'].values)for an in self.INFO['agent_names'])
 
         
         self.update_labels()
@@ -217,7 +217,8 @@ class mainWindow(QtGui.QMainWindow):
         d = {}
         start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
         stop_idx = np.where(df['frames'].values == self.INFO['stop_frame'])[0][0]
-        for an in self.AGENT_NAMES: 
+        
+        for an in self.INFO['agent_names']:
             d[an] = (df[an + '_x'].values[start_idx:stop_idx], df[an + '_y'].values[start_idx:stop_idx])
         
         
@@ -225,8 +226,20 @@ class mainWindow(QtGui.QMainWindow):
         self.trajectoryWindow.exec_()
         
     def stats_and_save(self): 
-        pass
+        df = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
         
+        name = QtGui.QFileDialog.getSaveFileName(self, 'Save File')
+        df.to_csv(name)
+        
+        
+
+        now = datetime.datetime.now()
+        now_str = now.strftime("%Y_%m_%d_%H_%M")
+        with open('info' + now_str + '.txt', 'w') as info_file: 
+            for key in self.INFO: 
+                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
+                
+        self.home.close()
         
         
     def apply_smoothing(self):
@@ -236,10 +249,11 @@ class mainWindow(QtGui.QMainWindow):
         else: 
             df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
             if smooth ==  'MedFilter, k=5': 
-                for an in self.AGENT_NAMES:
+                for an in self.INFO['agent_names']:
                     df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
                     df[an + '_y'] = smoothing.medfilt(df[an + '_y'].values)
                     self.send_info('Trajectory is now smooth !')
+                    self.INFO['filtered'] = True
                     
                     
     def send_info(self, text): 
