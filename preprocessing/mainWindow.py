@@ -159,8 +159,7 @@ class mainWindow(QtGui.QMainWindow):
         self.INFO['duration_time'] = type(df['time'].values[-1])
         self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])
         
-        #TODO THIS PART HAS TO BE UPDATED FOR MORE THAN TWO AGENTS 
-        
+        print([min(df[an + '_x'].values) for an in self.INFO['agent_names']])
         self.INFO['x_min'] = min(min(df[an + '_x'].values) for an in self.INFO['agent_names'])
         self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
         self.INFO['x_max'] = max(max(df[an + '_x'].values) for an in self.INFO['agent_names'])
