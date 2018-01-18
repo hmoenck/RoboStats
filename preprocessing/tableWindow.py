@@ -14,6 +14,8 @@ from agentWindow import agentWindow1
 
 
 class tableWindow(QtGui.QWidget):
+    ''' presents a selected .csv file, allows to identify and name relevant columns. The resulting 
+    columns (with respective names) will be saved as 'tmp.csv' to be further processed by main window'''
 
     #the name of the resulting file will be passed back to the main window            
     TMP_FILE_TITLE = 'tmp.csv'
@@ -27,11 +29,13 @@ class tableWindow(QtGui.QWidget):
         self.checkLabels = {'TIME': {'time': 2, 'frames': 1}, 'AGENTS':{ 'agent0_x': 5, 'agent0_y': 6, 'agent0_angle': 7, 
                             'agent1_x': 10, 'agent1_y': 11, 'agent1_angle': 12}} # labels for the selcted columns
         
-        self.AGENT_NAMES = ['agent0', 'agent1']
-        self.AGENT_DATA = ['_x', '_y', '_angle']   
+        self.AGENT_NAMES = ['agent0', 'agent1'] # default naming for agents
+        self.AGENT_DATA = ['_x', '_y', '_angle'] # default agent info   
         self.agentLEs = []
                             
-        self.nColumns = 0 #number of columns of the original file 
+        self.nColumns = 0 # number of columns of the original file 
+        
+        self.DELIMINATER = ';' # default deliminator for reading
 
         self.home()
         
@@ -44,22 +48,13 @@ class tableWindow(QtGui.QWidget):
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setStretchLastSection(True)
         
-        with open(self.fileName, "r") as fileInput:
-            for row in csv.reader(fileInput, delimiter = ';'):   
-                self.nColumns = len(row) 
-                items = [QtGui.QStandardItem(field) for field in row]
-                self.model.appendRow(items)
-        
- 
+        self.set_table()
+
+        # ---------------------------------------------------------------------
+        # COLUMN LAYOUT
+        # ---------------------------------------------------------------------
 
         self.checkBoxLayout = QtGui.QGridLayout()
-        
-        # ---------------------------------------------------------------------
-        # this can be done smarter...
-        # ---------------------------------------------------------------------
-
-        
-        #for j, key in enumerate(self.checkLabels): 
         
         for j, key in enumerate(['frames', 'time']): 
             cb = QtGui.QLabel(self)
@@ -73,11 +68,8 @@ class tableWindow(QtGui.QWidget):
             self.checkBoxLayout.addWidget(cb, 0, 2*j)
             self.checkBoxLayout.addWidget(le, 0, 2*j +1)
             
-            
-            
-        
-            
-        self.draw_agent_names()
+
+        self.draw_agent_names() # set the agent columns
 
 
         # ---------------------------------------------------------------------
@@ -117,9 +109,16 @@ class tableWindow(QtGui.QWidget):
         self.home.setLayout(self.layoutVertical)
         self.home.show()
 
+    def set_table(self): 
+        '''opens the selcted .csv and populates the table'''
+        with open(self.fileName, "r") as fileInput:
+            for row in csv.reader(fileInput, delimiter = self.DELIMINATER):   
+                self.nColumns = len(row) 
+                items = [QtGui.QStandardItem(field) for field in row]
+                self.model.appendRow(items)
                 
     def setColumn(self): 
-    
+        ''' reacts to changes in the text-edit field for column selection'''  
         sender = self.sender()
         senderName = sender.objectName()
         for key in self.checkLabels.keys():
@@ -127,13 +126,19 @@ class tableWindow(QtGui.QWidget):
                 self.checkLabels[key][senderName] = sender.text()
     
     def draw_agent_names(self): 
-    
+        ''' creates a lable and text-edit widget for each agent and agent-property (x, y, angle). Any 
+        preexisting widgets are deleted. This allows to change the agent number/names dynamically. If 
+        the agentWindow is not called we use the default values as specified in self.checkLabels['AGENTS']'''
+        
+        # this block deletes old widgets if there are any
         if len(self.agentLEs) != 0:
             for l in self.agentLEs: 
                 self.checkBoxLayout.removeWidget(l)
                 sip.delete(l) 
             self.agentLEs = []
         
+        # this block produces the new widgets (or default widgets when called the first time
+        # widget IDs are saved in self.agentLEs
         AGENTS_COLUMNS = {}
         for i in range(len(self.AGENT_NAMES)): 
             for k, s in enumerate(self.AGENT_DATA ): 
@@ -141,8 +146,7 @@ class tableWindow(QtGui.QWidget):
                 cb = QtGui.QLabel(self.AGENT_NAMES[i] + s)
                 self.agentLEs.append(cb)
                 
-                le = QtGui.QLineEdit(self)
-                
+                le = QtGui.QLineEdit(self)                
                 #le.setText(str(self.checkLabels['AGENTS'][label]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(self.AGENT_NAMES[i] + s)
@@ -157,52 +161,48 @@ class tableWindow(QtGui.QWidget):
         
         self.checkLabels['AGENTS'] = AGENTS_COLUMNS
 
+    def check_entries(self): 
+        ''' checks if the user entries are valid and returns a boolean value'''
+        valid = True
         
-    def save(self):     
-        warning = False
-        overlap = False
-        columnlist = []
-
+        columnlist = []# bulid a list of all columns of the final csv
         for key in self.checkLabels.keys(): 
             for v in self.checkLabels[key].values(): 
-                columnlist.append(v)
-        print(columnlist)
+                columnlist.append(int(v) -1)
+         
+        if any(x < 0 for x in columnlist): # check if all values were set (default = -1)
+            valid = False
         
-        if any(int(x) < 0 for x in columnlist):
-        # check if all values were set
-            warning = True
+        elif len(columnlist) != len(set(columnlist)): # check if no value appears twice
+            valid = False
+        
+        elif max(columnlist) > self.nColumns: # check if columns are in range of original file
+            valid = False
             
-        elif len(columnlist) != len(set(columnlist)): 
-        # check if no value appears twice
-            warning = True
-            overlap = True
-            
-        #TODO: Allow for only one agent as well as more than two agents 
-        #TODO: check if selected column idxs don't exceed length
-                
+        return valid
+        
+    def send_warning(self, text): 
+        ''' creates a Qt warning message with custom text''' 
         msg = QtGui.QMessageBox()
-               
-        if warning: 
-            msg.setIcon(QtGui.QMessageBox.Warning)
-            msg.setWindowTitle("Warning")
-            msg.setStandardButtons(QtGui.QMessageBox.Ok)
-              
-            if overlap == True: 
-                msg.setText("Some columns have been multipely defined. Please resolve bevor saving.")
-            else: 
-                msg.setText("Please define all columns you want to use")
-
-        else:        
-            msg.setIcon(QtGui.QMessageBox.Question)
-            msg.setText("Are you sure you want to save?")
-            msg.setWindowTitle("Confirm Save")
-            msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok)
-        
+        msg.setIcon(QtGui.QMessageBox.Warning)
+        msg.setWindowTitle("Warning")
+        msg.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg.setText(text)
         val = msg.exec_()
+            
         
-        if warning == False and overlap == False and val == 1024: 
-        # 1024 means 'Ok'
+            
+                    
+    def save(self):     
+        ''' gets called by the save Button. Checks if selected columns are valid, if so, the tmp.csv is created
+        otherwise a warning is sent'''
+        print(self.checkLabels)
+        valid = self.check_entries()
+        if valid: 
             self.build_final_csv(self.fileName)
+        else: 
+            self.send_warning('Column selection invalid')
+            
             
 
     def build_final_csv(self, fileName): 
@@ -229,6 +229,7 @@ class tableWindow(QtGui.QWidget):
         
         
     def addParams(self): 
+        #TODO should allow to set other non agent related columns, and also change properties of the csv (existing header, deliminater etc.)
         msg = QtGui.QMessageBox()
         msg.setIcon(QtGui.QMessageBox.Information)
         msg.setText("I can't do anything yet")
@@ -236,6 +237,7 @@ class tableWindow(QtGui.QWidget):
         val = msg.exec_()
    
     def change_agents(self): 
+        '''calls the agent window which allows to set number and names of agents'''
         self.aw = agentWindow1(self)
         self.aw.show()       
 
