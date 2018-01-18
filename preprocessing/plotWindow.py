@@ -54,6 +54,8 @@ class plotWindow(QtGui.QDialog):
         ax.add_patch(patches.Rectangle(*self.rect, fill = False, linewidth = 5))
         
         ax.legend()
+        #ax.xlim(self.rect[0][0]-5, self.rect[0][0] +self.rect[1] +5)
+        #ax.ylim(self.rect[0][1]-5, self.rect[0][1] +self.rect[2] +5)
        
         self.canvas.draw()
 
