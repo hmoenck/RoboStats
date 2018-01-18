@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from itertools import groupby
+from collections import Counter
+
 
 def stats_and_save(filename, info): 
 
@@ -8,7 +9,11 @@ def stats_and_save(filename, info):
     df_new = df
     
     # calculate speed and distance
-    FPS = np.mean([len(list(group)) for key, group in groupby(df['time'].values)]) #count how often the same time entry appears to find fps
+    #FPS = np.mean([len(list(group)) for key, group in groupby(df['time'].values)]) #count how often the same time entry appears to find fps
+    c = Counter(df['time'].values)
+    FPS = np.mean(np.array(list(c.values())))
+
+    
     DT  = 1. / FPS #timedelta is time per frame 
     for i, an in enumerate(info['agent_names']): 
         df_new[an + '_vx'] = velocity(df[an + '_x'].values, DT)
