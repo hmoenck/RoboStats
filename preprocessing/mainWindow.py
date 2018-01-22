@@ -16,13 +16,14 @@ from plotWindow import plotWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
+import settings.default_params as default
 
 class mainWindow(QtWidgets.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
-            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False, 'agent_names':[]}
+            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False, 'agent_names': default.agent_names}
             
-    TMP_FILE = ' '
+    TMP_FILE = default.tmp_file
     
     SMOOTHING = ['None', 'MedFilter, k=5']
 
@@ -231,18 +232,42 @@ class mainWindow(QtWidgets.QMainWindow):
         self.trajectoryWindow.exec_()
         
     def stats_and_save(self): 
-        df = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
+        df, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
         
-        name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')[0]
+        name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
+        
+        # order columns of df
+        time = ['frames', 'time']
+        agents = self.INFO ['agent_names']
+        specs = ['_x', '_y', '_angle']
+
+        cols = df.columns
+        new_order = []
+        for t in time: 
+            new_order.append(t)
+
+        for a in agents: 
+            for sp in specs: 
+                new_order.append(a + sp)
+            for in_st in indiv_stats: 
+                new_order.append(a + in_st)
+        for c in coll_stats: 
+            for col in cols: 
+                if col.find(c) > 0: 
+                    new_order.append(col)
+
+        df = df.reindex_axis(new_order, axis = 1)
+        print(new_order)
+        
         df.to_csv(name)
         
         
 
-        now = datetime.datetime.now()
-        now_str = now.strftime("%Y_%m_%d_%H_%M")
-        with open('info' + now_str + '.txt', 'w') as info_file: 
-            for key in self.INFO: 
-                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
+#        now = datetime.datetime.now()
+#        now_str = now.strftime("%Y_%m_%d_%H_%M")
+#        with open('info' + now_str + '.txt', 'w') as info_file: 
+#            for key in self.INFO: 
+#                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
                 
         self.home.close()
         
