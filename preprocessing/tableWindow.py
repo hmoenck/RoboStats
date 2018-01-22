@@ -1,19 +1,22 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import csv
 
-import sip
-sip.setapi('QString', 2)
-sip.setapi('QVariant', 2)
+#import sip
+#sip.setapi('QString', 2)
+#sip.setapi('QVariant', 2)
 
-from PyQt4 import QtGui, QtCore
+#from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets 
+from PyQt5 import QtGui # for QFont, QStandardItemModel
+
 import pandas as pd
 from numpy import random
 import sys
 from agentWindow import agentWindow1
 
 
-class tableWindow(QtGui.QWidget):
+class tableWindow(QtWidgets.QWidget):
     ''' presents a selected .csv file, allows to identify and name relevant columns. The resulting 
     columns (with respective names) will be saved as 'tmp.csv' to be further processed by main window'''
 
@@ -21,7 +24,9 @@ class tableWindow(QtGui.QWidget):
     TMP_FILE_TITLE = 'tmp.csv'
 
     def __init__(self, parentWindow, fileName):
+    #def __init__(self, fileName):
 
+        #super(tableWindow, self).__init__()
         super(tableWindow, self).__init__(parentWindow)
         self.parentWindow = parentWindow
         self.fileName = fileName #name of the selected csv
@@ -44,7 +49,7 @@ class tableWindow(QtGui.QWidget):
     
         self.model = QtGui.QStandardItemModel(self)
 
-        self.tableView = QtGui.QTableView(self)
+        self.tableView = QtWidgets.QTableView(self)
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setStretchLastSection(True)
         
@@ -54,13 +59,13 @@ class tableWindow(QtGui.QWidget):
         # COLUMN LAYOUT
         # ---------------------------------------------------------------------
 
-        self.checkBoxLayout = QtGui.QGridLayout()
+        self.checkBoxLayout = QtWidgets.QGridLayout()
         
         for j, key in enumerate(['frames', 'time']): 
-            cb = QtGui.QLabel(self)
+            cb = QtWidgets.QLabel(self)
             cb.setText(key)
             
-            le = QtGui.QLineEdit(self)
+            le = QtWidgets.QLineEdit(self)
             le.setText(str(self.checkLabels['TIME'][key]))
             le.textChanged.connect(self.setColumn)
             le.setObjectName(key)
@@ -76,26 +81,26 @@ class tableWindow(QtGui.QWidget):
         # Buttons
         # ---------------------------------------------------------------------
    
-        self.saveButton = QtGui.QPushButton(self)
+        self.saveButton = QtWidgets.QPushButton(self)
         self.saveButton.setText("Save")
         self.saveButton.clicked.connect(self.save)
         
-        self.addParamsButton = QtGui.QPushButton(self)
+        self.addParamsButton = QtWidgets.QPushButton(self)
         self.addParamsButton.setText("Add Parameters")
         self.addParamsButton.clicked.connect(self.addParams)
         
-        self.changeAgentsButton = QtGui.QPushButton(self)
+        self.changeAgentsButton = QtWidgets.QPushButton(self)
         self.changeAgentsButton.setText("Add/Remove Agents")
         self.changeAgentsButton.clicked.connect(self.change_agents)
         
 
-        self.layoutVertical = QtGui.QVBoxLayout()
+        self.layoutVertical = QtWidgets.QVBoxLayout()
         
-        self.upperLayout = QtGui.QVBoxLayout()
+        self.upperLayout = QtWidgets.QVBoxLayout()
         self.upperLayout.addWidget(self.tableView)
 
         
-        self.lowerLayout = QtGui.QHBoxLayout()
+        self.lowerLayout = QtWidgets.QHBoxLayout()
         self.lowerLayout.addWidget(self.addParamsButton)
         self.lowerLayout.addWidget(self.changeAgentsButton)
         self.lowerLayout.addWidget(self.saveButton)
@@ -105,13 +110,14 @@ class tableWindow(QtGui.QWidget):
         self.layoutVertical.addLayout(self.lowerLayout)
 
 
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.layoutVertical)
         self.home.show()
 
     def set_table(self): 
         '''opens the selcted .csv and populates the table'''
         with open(self.fileName, "r") as fileInput:
+        #fileInput = open(self.fileName, 'r')
             for row in csv.reader(fileInput, delimiter = self.DELIMINATER):   
                 self.nColumns = len(row) 
                 items = [QtGui.QStandardItem(field) for field in row]
@@ -143,10 +149,10 @@ class tableWindow(QtGui.QWidget):
         for i in range(len(self.AGENT_NAMES)): 
             for k, s in enumerate(self.AGENT_DATA ): 
 
-                cb = QtGui.QLabel(self.AGENT_NAMES[i] + s)
+                cb = QtWidgets.QLabel(self.AGENT_NAMES[i] + s)
                 self.agentLEs.append(cb)
                 
-                le = QtGui.QLineEdit(self)                
+                le = QtWidgets.QLineEdit(self)                
                 #le.setText(str(self.checkLabels['AGENTS'][label]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(self.AGENT_NAMES[i] + s)
@@ -183,10 +189,10 @@ class tableWindow(QtGui.QWidget):
         
     def send_warning(self, text): 
         ''' creates a Qt warning message with custom text''' 
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Warning)
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setWindowTitle("Warning")
-        msg.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msg.setText(text)
         val = msg.exec_()
             
@@ -230,10 +236,10 @@ class tableWindow(QtGui.QWidget):
         
     def addParams(self): 
         #TODO should allow to set other non agent related columns, and also change properties of the csv (existing header, deliminater etc.)
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Information)
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Information)
         msg.setText("I can't do anything yet")
-        msg.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         val = msg.exec_()
    
     def change_agents(self): 
@@ -248,12 +254,12 @@ class tableWindow(QtGui.QWidget):
 #if __name__ == "__main__":
 #    import sys
 
-#    data = '/home/claudia/Dokumente/Uni/lab_rotation_FU/TracksRoboLife/CouzinDataOutWedMar01132818201.csv'
+#    data = '/home/claudia/Dokumente/Uni/lab_rotation_FU/data/TracksRoboLife/CouzinDataOutWedMar01132818201.csv'
 
-#    app = QtGui.QApplication(sys.argv)
+#    app = QtWidgets.QApplication(sys.argv)
 #    app.setApplicationName('Table View')
 
-#    main = TableWindow(data)
+#    main = tableWindow(data)
 #    main.show()
 
 #    sys.exit(app.exec_())
