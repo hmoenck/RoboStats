@@ -3,7 +3,9 @@
 import csv
 
 
-from PyQt4 import QtGui, QtCore
+#from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets 
+from PyQt5 import QtGui
 import pandas as pd
 from numpy import random
 import numpy as np
@@ -12,7 +14,7 @@ import sys
 import settings.data_settings as ds
 
 
-class coordinateWindow(QtGui.QWidget):
+class coordinateWindow(QtWidgets.QWidget):
 
     def __init__(self, parentWindow, coordinates):
     #def __init__(self, coordinates, parent = None):
@@ -33,13 +35,13 @@ class coordinateWindow(QtGui.QWidget):
     def home(self): 
         
         self.TEXTBOXES = {}
-        self.coordinateLayout = QtGui.QGridLayout()
+        self.coordinateLayout = QtWidgets.QGridLayout()
         
         for k, key in enumerate(self.KEYS): 
-            cb = QtGui.QLabel()
+            cb = QtWidgets.QLabel()
             cb.setText(key)
 
-            le = QtGui.QLineEdit()
+            le = QtWidgets.QLineEdit()
             le.setText(str(self.COORDINATES[key]))
             le.setValidator(QtGui.QDoubleValidator())
             self.TEXTBOXES[key] = le
@@ -48,15 +50,15 @@ class coordinateWindow(QtGui.QWidget):
             self.coordinateLayout.addWidget(le, 0, 2*k +1)
 
         
-        self.backButton = QtGui.QPushButton('Back to Normal')
+        self.backButton = QtWidgets.QPushButton('Back to Normal')
         self.backButton.clicked.connect(self.back2normal)
         self.coordinateLayout.addWidget(self.backButton, 3, 2)       
         
-        self.okButton = QtGui.QPushButton('OK')
+        self.okButton = QtWidgets.QPushButton('OK')
         self.okButton.clicked.connect(self.clickedOK)
         self.coordinateLayout.addWidget(self.okButton, 3, 3)
         
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.coordinateLayout)
         self.home.show()
         
@@ -85,10 +87,10 @@ class coordinateWindow(QtGui.QWidget):
                     self.home.close()
                 
     def send_warning(self): 
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Warning)
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setWindowTitle("Warning")
-        msg.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msg.setText("Entries missing or invalid. Please fix before leaving.")
         val = msg.exec_()
 
