@@ -1,6 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#from PyQt4 import QtGui, QtCore
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets 
+from PyQt5.QtGui import QFont   
+
+
 import pandas as pd
 import numpy as np
 import datetime
@@ -12,7 +17,7 @@ import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 
-class mainWindow(QtGui.QMainWindow):
+class mainWindow(QtWidgets.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
             'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False, 'agent_names':[]}
@@ -28,15 +33,15 @@ class mainWindow(QtGui.QMainWindow):
     def home(self): 
 
 
-        self.mainLayout = QtGui.QVBoxLayout()
+        self.mainLayout = QtWidgets.QVBoxLayout()
         
         #------------------------------------------------------------
         # select layout
         #------------------------------------------------------------
         
-        self.selectLayout = QtGui.QHBoxLayout()
+        self.selectLayout = QtWidgets.QHBoxLayout()
         
-        self.selectData = QtGui.QPushButton('Set Data Columns')
+        self.selectData = QtWidgets.QPushButton('Set Data Columns')
         self.selectData.clicked.connect(self.on_Button_clicked)
         
         self.selectLayout.addWidget(self.selectData)       
@@ -45,13 +50,13 @@ class mainWindow(QtGui.QMainWindow):
         # time layout
         #------------------------------------------------------------
         
-        self.timeLayout = QtGui.QVBoxLayout()
+        self.timeLayout = QtWidgets.QVBoxLayout()
         
-        self.startInfo = QtGui.QLabel('Start: ----')
-        self.stopInfo = QtGui.QLabel('Stop: ----')
-        self.durationInfo = QtGui.QLabel('Duration: ----')
+        self.startInfo = QtWidgets.QLabel('Start: ----')
+        self.stopInfo = QtWidgets.QLabel('Stop: ----')
+        self.durationInfo = QtWidgets.QLabel('Duration: ----')
         
-        self.changeTimeButton = QtGui.QPushButton('Change')
+        self.changeTimeButton = QtWidgets.QPushButton('Change')
         self.changeTimeButton.setFixedWidth(100)
         self.changeTimeButton.clicked.connect(self.changeTime)
         
@@ -66,18 +71,18 @@ class mainWindow(QtGui.QMainWindow):
         # space layout
         #------------------------------------------------------------
         
-        self.spaceLayout = QtGui.QGridLayout()
+        self.spaceLayout = QtWidgets.QGridLayout()
         
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
         self.Border_info = []
         
         for j, b in enumerate(borders):   
-            border = QtGui.QLabel( b +': ----')
+            border = QtWidgets.QLabel( b +': ----')
             border.setObjectName(b)
             self.spaceLayout.addWidget(border, 0, j)
             self.Border_info.append(border)
             
-        self.changeCoordsButton = QtGui.QPushButton('Change')
+        self.changeCoordsButton = QtWidgets.QPushButton('Change')
         self.changeCoordsButton.setFixedWidth(100)
         self.changeCoordsButton.clicked.connect(self.changeCoords)
 
@@ -86,13 +91,13 @@ class mainWindow(QtGui.QMainWindow):
         #------------------------------------------------------------
         # smooth layout
         #------------------------------------------------------------
-        self.smoothLayout = QtGui.QHBoxLayout()
+        self.smoothLayout = QtWidgets.QHBoxLayout()
 
-        self.selectSmoothing = QtGui.QComboBox()
+        self.selectSmoothing = QtWidgets.QComboBox()
         for s in self.SMOOTHING:    
             self.selectSmoothing.addItem(s)
 
-        self.smoothButton = QtGui.QPushButton('Apply Smoothing')
+        self.smoothButton =QtWidgets.QPushButton('Apply Smoothing')
         self.smoothButton.clicked.connect(self.apply_smoothing)
         
         self.smoothLayout.addWidget(self.selectSmoothing)
@@ -103,13 +108,13 @@ class mainWindow(QtGui.QMainWindow):
         #------------------------------------------------------------
         # final layout
         #------------------------------------------------------------
-        self.finalLayout = QtGui.QVBoxLayout()
+        self.finalLayout = QtWidgets.QVBoxLayout()
 
         
-        self.plotButton = QtGui.QPushButton('Plot')
+        self.plotButton = QtWidgets.QPushButton('Plot')
         self.plotButton.clicked.connect(self.plot_trajectory)
         
-        self.saveButton = QtGui.QPushButton('Stats and save')
+        self.saveButton = QtWidgets.QPushButton('Stats and save')
         self.saveButton.clicked.connect(self.stats_and_save)
         
         self.finalLayout.addWidget(self.plotButton)
@@ -130,14 +135,15 @@ class mainWindow(QtGui.QMainWindow):
         self.mainLayout.addLayout(self.finalLayout)
          
 
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
         self.setCentralWidget(self.home)
 
     
     def on_Button_clicked(self): 
     
-        data_name = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
+        data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
+        print(data_name)
         print('selected file: ', data_name)
         self.table = tableWindow(self, data_name)
         self.table.show()        
@@ -180,9 +186,9 @@ class mainWindow(QtGui.QMainWindow):
         
     def HLine(self):
     
-        toto = QtGui.QFrame()
-        toto.setFrameShape(QtGui.QFrame.HLine)
-        toto.setFrameShadow(QtGui.QFrame.Sunken)
+        toto = QtWidgets.QFrame()
+        toto.setFrameShape(QtWidgets.QFrame.HLine)
+        toto.setFrameShadow(QtWidgets.QFrame.Sunken)
         return toto
         
     def changeTime(self):
@@ -227,7 +233,7 @@ class mainWindow(QtGui.QMainWindow):
     def stats_and_save(self): 
         df = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
         
-        name = QtGui.QFileDialog.getSaveFileName(self, 'Save File')
+        name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')[0]
         df.to_csv(name)
         
         
@@ -257,8 +263,8 @@ class mainWindow(QtGui.QMainWindow):
                     
     def send_info(self, text): 
         
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Information)
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Information)
         msg.setText(text)
         msg.setWindowTitle("INFO")
         retval = msg.exec_()
@@ -266,7 +272,7 @@ class mainWindow(QtGui.QMainWindow):
 if __name__ == "__main__":
     import sys
 
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName('main')
 
     main = mainWindow()
