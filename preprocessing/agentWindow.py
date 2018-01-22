@@ -96,7 +96,8 @@ class agentWindow(QtWidgets.QWidget):
         if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates   
             print(self.AGENT_NAMES)     
             self.parentWindow.AGENT_NAMES = self.AGENT_NAMES   
-            self.parentWindow.draw_agent_names() 
+            self.parentWindow.update_checklabels(init = False)
+            self.parentWindow.draw_agent_names(init = False) 
             self.home.close()      
         else: 
             self.send_warning()
@@ -161,19 +162,5 @@ class agentWindow(QtWidgets.QWidget):
 #    #main.show()
 
 #    sys.exit(app.exec_())       
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
         
