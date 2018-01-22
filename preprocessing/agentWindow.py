@@ -14,17 +14,20 @@ import sip
 
 #import settings.data_settings as ds
 
-class agentWindow1(QtWidgets.QWidget):
+class agentWindow(QtWidgets.QWidget):
+    ''' takes a list of default agent names from parent window and allows to change agent number and names'''
 
-    def __init__(self, parentWindow):
-    #def __init__(self, parent = None):
+    def __init__(self, parentWindow, agent_names = []):
+    #def __init__(self, parent = None, agent_names = []):
     
-        self.nAgents = 2
-        self.AGENT_NAMES = ['agent'+ str(i) for i in range(self.nAgents)]
+        self.nAgents = len(agent_names)
+        self.AGENT_NAMES = agent_names
+        
         self.labels = []
+        self.custom_names = []
     
-        super(agentWindow1, self).__init__(parentWindow)
-        #super(agentWindow1, self).__init__(parent)
+        super(agentWindow, self).__init__(parentWindow)
+        #super(agentWindow, self).__init__(parent)
         self.parentWindow = parentWindow
 
         self.home()
@@ -34,8 +37,8 @@ class agentWindow1(QtWidgets.QWidget):
         self.nAgentsEdit.setText(str(self.nAgents))
         self.nAgentsEdit.setValidator(QtGui.QIntValidator())
 
-        self.nAgentsRename = QtWidgets.QPushButton('Rename')
-        self.nAgentsRename.clicked.connect(self.change_agent_name)
+        self.nAgentsChange = QtWidgets.QPushButton('Change')
+        self.nAgentsChange.clicked.connect(self.change_agent_number)
         
         self.OKButton = QtWidgets.QPushButton('OK')
         self.OKButton.clicked.connect(self.pushed_ok)
@@ -43,86 +46,43 @@ class agentWindow1(QtWidgets.QWidget):
         self.mainLayout = QtWidgets.QGridLayout()
         self.mainLayout.addWidget(QtWidgets.QLabel('Agents:'), 0, 0)
         self.mainLayout.addWidget(self.nAgentsEdit, 0, 1)
-        self.mainLayout.addWidget(self.nAgentsRename, 0, 2)
+        self.mainLayout.addWidget(self.nAgentsChange, 0, 2)
         self.mainLayout.addWidget(self.OKButton, 10, 10)
+        
+        self.mainLayout.addWidget(QtWidgets.QLabel('Names:'), 1, 0)
         
         self.draw_agent_names()
         
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
         self.home.show()
+        
+        
+        
+        
+    def change_agent_number(self): 
+        '''gets called by the Change button, changes agent number 
+            and calls the draw_agent_names() function to adapt the 
+            section for agent name setting.'''
+        
+        self.nAgents = int(self.nAgentsEdit.text())
+        
+        if len(self.AGENT_NAMES) < self.nAgents: # nAgent was increased, add default names
+            for k in range(self.nAgents -len(self.AGENT_NAMES)): 
+                self.AGENT_NAMES.append('agent'+ str(self.nAgents -1 +k))
+        elif len(self.AGENT_NAMES) > self.nAgents:
+            self.AGENT_NAMES = self.AGENT_NAMES[:self.nAgents]
+        self.draw_agent_names(first_call = False)
+
     
     def pushed_ok(self): 
-        self.parentWindow.AGENT_NAMES = self.AGENT_NAMES
-        self.parentWindow.draw_agent_names()
-        self.home.close()
-            
-    def change_agent_name(self): 
-        self.nAgents = int(self.nAgentsEdit.text())
-        aw2 = agentWindow2(self, self.nAgents, self.AGENT_NAMES)
-        aw2.show()
-   
-    def draw_agent_names(self): 
-        
-        self.mainLayout.addWidget(QtWidgets.QLabel('Names:'), 1, 0)
-        
-        for l in self.labels: 
-            self.mainLayout.removeWidget(l)
-            sip.delete(l)
-            
-        self.labels = []
-        for k, an in enumerate(self.AGENT_NAMES): 
-            aa = QtWidgets.QLabel(an)
-            self.mainLayout.addWidget(aa, k+2, 1)
-            self.labels.append(aa)
-        
-        
-        
-class agentWindow2(QtWidgets.QWidget):
-
-    def __init__(self, parentWindow, n, names):
-    
-        self.nAgents = n
-        self.AGENT_NAMES = names
-
-        
-        super(agentWindow2, self).__init__(parentWindow)
-
-        self.parentWindow = parentWindow
-        
-        self.home()
-
-    def home(self): 
-        self.mainLayout = QtWidgets.QGridLayout()
-        
-        self.agentLEs = []
-        
-        for i in range(self.nAgents): 
-            cb = QtWidgets.QLabel(self)
-            cb.setText('agent' + str(i))
-            
-            le = QtWidgets.QLineEdit(self)
-            le.setText(self.AGENT_NAMES[i])                
-            self.agentLEs.append(le)
-    #                le.setValidator(QtGui.QIntValidator())
-            self.mainLayout.addWidget(cb, i+1, 0)
-            self.mainLayout.addWidget(le, i+1, 1)
-
-
-        self.OKButton = QtWidgets.QPushButton('OK')
-        self.OKButton.clicked.connect(self.on_ok)
-        self.mainLayout.addWidget(self.OKButton, i+2, 1)
-
-        self.home = QtWidgets.QWidget()
-        self.home.setLayout(self.mainLayout)
-        self.home.show()
-        
-    def on_ok(self): 
+        ''' reads agent names from line edit elements, checks for validity (no empty fields, 
+        no name starting with an integer, no double names) and sends the new names to parent window. '''
         self.AGENT_NAMES = []
-        print(self.AGENT_NAMES)
-        for le in self.agentLEs: 
+
+        for le in self.custom_names: 
             text = le.text()
-            
+
             if len(text) > 0: # don't allow empty names
                 if text[0].isdigit(): # don't allow names to start with int
                     self.send_warning()
@@ -133,36 +93,75 @@ class agentWindow2(QtWidgets.QWidget):
                 self.send_warning()
                 pass
                 
-        if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates        
-            self.parentWindow.AGENT_NAMES = self.AGENT_NAMES
-            self.parentWindow.draw_agent_names()
-            self.home.close()            
+        if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates   
+            print(self.AGENT_NAMES)     
+            self.parentWindow.AGENT_NAMES = self.AGENT_NAMES   
+            self.parentWindow.draw_agent_names() 
+            self.home.close()      
         else: 
             self.send_warning()
             
             
+
+   
+    def draw_agent_names(self, first_call = True): 
+        ''' creates for each agent name a label and line edit element. When called the first time
+        those elemnts are disabled, to avoid unintentional changes'''
+
+        if first_call == False: # if the function has already been called, 
+                                # previously build lists of labels and line edits have to be deleted
+            for l in self.labels: 
+                self.mainLayout.removeWidget(l)
+                sip.delete(l)
                 
+            for cn in self.custom_names: 
+                self.mainLayout.removeWidget(cn)
+                sip.delete(cn)
+                
+            self.labels = []
+            self.custom_names = []
+        
+        
+        for k, an in enumerate(self.AGENT_NAMES): 
+            l = QtWidgets.QLabel('agent' + str(k))
+
+            cn = QtWidgets.QLineEdit()
+            cn.setText(an)
+            cn.setObjectName(an)
+            if first_call == True: cn.setEnabled(False)
+            
+            self.mainLayout.addWidget(l, k+2, 1)
+            self.mainLayout.addWidget(cn, k+2, 2)
+            
+            self.labels.append(l)
+            self.custom_names.append(cn)
+
+            
+            
     def send_warning(self): 
+        ''' opens a Qt Warning Dialog'''
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText("Invalid or empty agent names")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         retval = msg.exec_()
-
         
+        
+        
+    
 
 #if __name__ == "__main__":
 #    import sys
 #    import numpy as np
 
-#    app = QtGui.QApplication(sys.argv)
-#    app.setApplicationName('Time Sliders')
+#    app = QtWidgets.QApplication(sys.argv)
+#    app.setApplicationName('Agent window')
 
-#    main = agentWindow1()
+#    main = agentWindow(agent_names = ['hi', 'hu'])
 #    #main.show()
 
 #    sys.exit(app.exec_())       
-#        
+        
         
         
         
