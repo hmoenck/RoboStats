@@ -1,8 +1,22 @@
-import sys
-from PyQt4 import QtGui, QtCore
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+import sys
+#from PyQt4 import QtGui, QtCore
+
+from PyQt5 import QtWidgets 
+#from PyQt5 import QtGui
+
+import matplotlib
+matplotlib.use('Qt5Agg')
+
+#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+#from matplotlib.figure import Figure
+
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
 
@@ -15,7 +29,7 @@ import numpy as np
 
 
 
-class plotWindow(QtGui.QDialog):
+class plotWindow(QtWidgets.QDialog):
 #TODO make more general
     def __init__(self, data, rect, parent = None):
         ''' 'data' is a dictionary and for every agent it contains an xy tuple, strt/stop time is 
@@ -29,12 +43,12 @@ class plotWindow(QtGui.QDialog):
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        #self.toolbar = NavigationToolbar(self.canvas, self)
 
 
         # set the layout
-        layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.toolbar)
+        layout = QtWidgets.QVBoxLayout()
+        #layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
         
