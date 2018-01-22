@@ -1,4 +1,6 @@
 import numpy as np
+# From arXiv:1601.08202v1 [q-bio.QM] 28 Jan 2016
+
 
 def direction_correlation(data): 
     
