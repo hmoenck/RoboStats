@@ -119,6 +119,7 @@ class tableWindow(QtWidgets.QWidget):
         self.home.setLayout(self.layoutVertical)
         self.home.show()
 
+
     def set_table(self): 
         '''opens the selcted .csv and populates the table'''
         with open(self.fileName, "r") as fileInput:
@@ -127,6 +128,24 @@ class tableWindow(QtWidgets.QWidget):
                 self.nColumns = len(row) 
                 items = [QtGui.QStandardItem(field) for field in row]
                 self.model.appendRow(items)
+ 
+                
+    def update_checklabels(self, init = False): 
+        ''' the checkLabels dictionary conatins the names and indices of all selected columns. 
+        When called with init= True, the default values (specified in settings/default_params.py) 
+        will be used for initilaization, otherwise the columns will be initialized with -1.''' 
+
+        if init == True or len(self.AGENT_NAMES)*len(self.AGENT_DATA) == len(default.agent_columns): 
+            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
+            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : default.agent_columns[i*len(self.AGENT_DATA)+k] 
+            for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
+            
+        else: 
+            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
+            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : -1 
+            for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
+        
+        print(self.checkLabels)            
                 
     def setColumn(self): 
         ''' reacts to changes in the text-edit field for column selection'''  
@@ -139,8 +158,8 @@ class tableWindow(QtWidgets.QWidget):
     
     def draw_agent_names(self, init = False): 
         ''' creates a lable and text-edit widget for each agent and agent-property (x, y, angle). Any 
-        preexisting widgets are deleted. This allows to change the agent number/names dynamically. If 
-        the agentWindow is not called we use the default values as specified in self.checkLabels['AGENTS']'''
+        preexisting widgets are deleted. This allows to change the agent number/names dynamically. The Widgets are 
+        populated with te valued found in checkLables, if a checkLabels entry is -1 the value will not e drawn.'''
         
         # this block deletes old widgets if there are any
         if init == False: 
@@ -157,8 +176,10 @@ class tableWindow(QtWidgets.QWidget):
                 cb = QtWidgets.QLabel(self.AGENT_NAMES[i] + s)
                 self.agentLEs.append(cb)
                 
-                le = QtWidgets.QLineEdit(self)                
-                le.setText(str(self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s]))
+                le = QtWidgets.QLineEdit(self)
+                
+                if self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s] > 0               
+                    le.setText(str(self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(self.AGENT_NAMES[i] + s)
                 le.setValidator(QtGui.QIntValidator())
@@ -169,7 +190,8 @@ class tableWindow(QtWidgets.QWidget):
 
         
     def check_entries(self): 
-        ''' checks if the user entries are valid and returns a boolean value'''
+        ''' called from the save function. 
+        checks if the user entries are valid and returns a boolean value'''
         valid = True        
         columnlist = []# bulid a list of all columns of the final csv
 
@@ -195,18 +217,19 @@ class tableWindow(QtWidgets.QWidget):
         val = msg.exec_()
 
     def save(self):     
-        ''' gets called by the save Button. Checks if selected columns are valid, if so, the tmp.csv is created
+        ''' gets called by the save Button. Checks if selected columns are valid, if so, data is saved to a temporary csv file
         otherwise a warning is sent'''
         print(self.checkLabels)
         valid = self.check_entries()
         if valid: 
-            self.build_final_csv(self.fileName)
+            self.build_csv(self.fileName)
         else: 
             self.send_warning('Column selection invalid: Check for empty fields, double indices and indices exceeding size of original file')
             
             
 
-    def build_final_csv(self, fileName): 
+    def build_csv(self, fileName): 
+        ''' uses the selected columns to build a temporary pandas frame which is saved to .csv under a default name.'''
         header_dict ={}
     
         for key in self.checkLabels.keys(): 
@@ -226,7 +249,13 @@ class tableWindow(QtWidgets.QWidget):
         self.parentWindow.init_Info(self.TMP_FILE_TITLE)
         self.home.close()
         
+  
+    def change_agents(self): 
+        '''calls the agent window which allows to set number and names of agents'''
+        self.aw = agentWindow(self, self.AGENT_NAMES)
+        self.aw.show()   
         
+
         
     def addParams(self): 
         #TODO should allow to set other non agent related columns, and also change properties of the csv (existing header, deliminater etc.)
@@ -235,23 +264,6 @@ class tableWindow(QtWidgets.QWidget):
         msg.setText("I can't do anything yet")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         val = msg.exec_()
-   
-    def change_agents(self): 
-        '''calls the agent window which allows to set number and names of agents'''
-        self.aw = agentWindow(self, self.AGENT_NAMES)
-        self.aw.show()   
-        
-    def update_checklabels(self, init = False): 
-        print('checkLabels were updated')
-
-        if init == True or len(self.AGENT_NAMES)*len(self.AGENT_DATA) == len(default.agent_columns): 
-            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
-            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : default.agent_columns[i*len(self.AGENT_DATA)+k] for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
-            
-        else: 
-            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
-            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : -1 for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
-        print(self.checkLabels)
 
         
 
