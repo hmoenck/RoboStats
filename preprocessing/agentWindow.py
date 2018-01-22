@@ -1,7 +1,11 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import csv
 
-
-from PyQt4 import QtGui, QtCore
+#from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets 
+from PyQt5 import QtGui 
 import pandas as pd
 from numpy import random
 import numpy as np
@@ -10,7 +14,7 @@ import sip
 
 #import settings.data_settings as ds
 
-class agentWindow1(QtGui.QWidget):
+class agentWindow1(QtWidgets.QWidget):
 
     def __init__(self, parentWindow):
     #def __init__(self, parent = None):
@@ -26,25 +30,25 @@ class agentWindow1(QtGui.QWidget):
         self.home()
         
     def home(self): 
-        self.nAgentsEdit = QtGui.QLineEdit()
+        self.nAgentsEdit = QtWidgets.QLineEdit()
         self.nAgentsEdit.setText(str(self.nAgents))
         self.nAgentsEdit.setValidator(QtGui.QIntValidator())
 
-        self.nAgentsRename = QtGui.QPushButton('Rename')
+        self.nAgentsRename = QtWidgets.QPushButton('Rename')
         self.nAgentsRename.clicked.connect(self.change_agent_name)
         
-        self.OKButton = QtGui.QPushButton('OK')
+        self.OKButton = QtWidgets.QPushButton('OK')
         self.OKButton.clicked.connect(self.pushed_ok)
 
-        self.mainLayout = QtGui.QGridLayout()
-        self.mainLayout.addWidget(QtGui.QLabel('Agents:'), 0, 0)
+        self.mainLayout = QtWidgets.QGridLayout()
+        self.mainLayout.addWidget(QtWidgets.QLabel('Agents:'), 0, 0)
         self.mainLayout.addWidget(self.nAgentsEdit, 0, 1)
         self.mainLayout.addWidget(self.nAgentsRename, 0, 2)
         self.mainLayout.addWidget(self.OKButton, 10, 10)
         
         self.draw_agent_names()
         
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
         self.home.show()
     
@@ -60,7 +64,7 @@ class agentWindow1(QtGui.QWidget):
    
     def draw_agent_names(self): 
         
-        self.mainLayout.addWidget(QtGui.QLabel('Names:'), 1, 0)
+        self.mainLayout.addWidget(QtWidgets.QLabel('Names:'), 1, 0)
         
         for l in self.labels: 
             self.mainLayout.removeWidget(l)
@@ -68,13 +72,13 @@ class agentWindow1(QtGui.QWidget):
             
         self.labels = []
         for k, an in enumerate(self.AGENT_NAMES): 
-            aa = QtGui.QLabel(an)
+            aa = QtWidgets.QLabel(an)
             self.mainLayout.addWidget(aa, k+2, 1)
             self.labels.append(aa)
         
         
         
-class agentWindow2(QtGui.QWidget):
+class agentWindow2(QtWidgets.QWidget):
 
     def __init__(self, parentWindow, n, names):
     
@@ -89,15 +93,15 @@ class agentWindow2(QtGui.QWidget):
         self.home()
 
     def home(self): 
-        self.mainLayout = QtGui.QGridLayout()
+        self.mainLayout = QtWidgets.QGridLayout()
         
         self.agentLEs = []
         
         for i in range(self.nAgents): 
-            cb = QtGui.QLabel(self)
+            cb = QtWidgets.QLabel(self)
             cb.setText('agent' + str(i))
             
-            le = QtGui.QLineEdit(self)
+            le = QtWidgets.QLineEdit(self)
             le.setText(self.AGENT_NAMES[i])                
             self.agentLEs.append(le)
     #                le.setValidator(QtGui.QIntValidator())
@@ -105,11 +109,11 @@ class agentWindow2(QtGui.QWidget):
             self.mainLayout.addWidget(le, i+1, 1)
 
 
-        self.OKButton = QtGui.QPushButton('OK')
+        self.OKButton = QtWidgets.QPushButton('OK')
         self.OKButton.clicked.connect(self.on_ok)
         self.mainLayout.addWidget(self.OKButton, i+2, 1)
 
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
         self.home.show()
         
@@ -139,10 +143,10 @@ class agentWindow2(QtGui.QWidget):
             
                 
     def send_warning(self): 
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Warning)
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText("Invalid or empty agent names")
-        msg.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         retval = msg.exec_()
 
         
