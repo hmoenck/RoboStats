@@ -3,7 +3,9 @@
 import csv
 
 
-from PyQt4 import QtGui, QtCore
+#from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets 
+from PyQt5.QtCore import Qt
 import pandas as pd
 from numpy import random
 import numpy as np
@@ -12,7 +14,7 @@ import sys
 import settings.data_settings as ds
 
 
-class timeWindow(QtGui.QWidget):
+class timeWindow(QtWidgets.QWidget):
 
     def __init__(self, parentWindow, time, frames):
     #def __init__(self, time, parent = None):
@@ -29,35 +31,35 @@ class timeWindow(QtGui.QWidget):
     
     def home(self): 
 
-        self.timeLayout = QtGui.QGridLayout()
+        self.timeLayout = QtWidgets.QGridLayout()
 
-        self.StartTimeSliderTitle = QtGui.QLabel('Start')
+        self.StartTimeSliderTitle = QtWidgets.QLabel('Start')
         
-        self.StartTimeSlider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.StartTimeSlider = QtWidgets.QSlider(Qt.Horizontal)
         self.StartTimeSlider.setObjectName('start')
         self.StartTimeSlider.valueChanged.connect(self.set_time)
         self.StartTimeSlider.setRange(0, len(self.TIME))
         
-        self.StartTime = QtGui.QLineEdit(self.START_STOP['start_time'])
-        self.StartFrame = QtGui.QLineEdit(str(self.START_STOP['start_frame']))
+        self.StartTime = QtWidgets.QLineEdit(self.START_STOP['start_time'])
+        self.StartFrame = QtWidgets.QLineEdit(str(self.START_STOP['start_frame']))
         
         
         
-        self.StopTimeSliderTitle = QtGui.QLabel('Stop')
+        self.StopTimeSliderTitle = QtWidgets.QLabel('Stop')
         
-        self.StopTimeSlider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.StopTimeSlider = QtWidgets.QSlider(Qt.Horizontal)
         self.StopTimeSlider.setObjectName('stop')
         self.StopTimeSlider.setRange(0, len(self.TIME))
         self.StopTimeSlider.setSliderPosition(len(self.TIME))
         self.StopTimeSlider.valueChanged.connect(self.set_time)
         
         
-        self.StopTime = QtGui.QLineEdit(self.START_STOP['stop_time'])
-        self.StopFrame = QtGui.QLineEdit(str(self.START_STOP['stop_frame']))
+        self.StopTime = QtWidgets.QLineEdit(self.START_STOP['stop_time'])
+        self.StopFrame = QtWidgets.QLineEdit(str(self.START_STOP['stop_frame']))
         
         
         
-        self.okButton = QtGui.QPushButton('OK')
+        self.okButton = QtWidgets.QPushButton('OK')
         self.okButton.clicked.connect(self.clickedOK)
         
         
@@ -73,7 +75,7 @@ class timeWindow(QtGui.QWidget):
         
         self.timeLayout.addWidget(self.okButton, 3, 3)
         
-        self.home = QtGui.QWidget()
+        self.home = QtWidgets.QWidget()
         self.home.setLayout(self.timeLayout)
         self.home.show()
         
