@@ -5,7 +5,7 @@ import csv
 #import sip
 #sip.setapi('QString', 2)
 #sip.setapi('QVariant', 2)
-
+import sip
 #from PyQt4 import QtGui, QtCore
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui # for QFont, QStandardItemModel
@@ -13,7 +13,7 @@ from PyQt5 import QtGui # for QFont, QStandardItemModel
 import pandas as pd
 from numpy import random
 import sys
-from agentWindow import agentWindow1
+from agentWindow import agentWindow
 
 
 class tableWindow(QtWidgets.QWidget):
@@ -244,7 +244,7 @@ class tableWindow(QtWidgets.QWidget):
    
     def change_agents(self): 
         '''calls the agent window which allows to set number and names of agents'''
-        self.aw = agentWindow1(self)
+        self.aw = agentWindow(self, self.AGENT_NAMES)
         self.aw.show()       
 
 
