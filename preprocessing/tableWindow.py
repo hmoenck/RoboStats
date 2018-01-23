@@ -236,12 +236,12 @@ class tableWindow(QtWidgets.QWidget):
             for k in self.checkLabels[key].keys(): 
                 header_dict[k] = self.checkLabels[key][k]
         
-        df = pd.read_csv(fileName, header = None, sep = ';', names = [str(i) for i in range(self.nColumns)])
+        df = pd.read_csv(fileName, header = None, sep = default.csv_delim , names = [str(i) for i in range(self.nColumns)])
         
         real_indices = [str(int(cl) -1) for cl in header_dict.values()]
         df_new = df.loc[:, real_indices]
         df_new.columns = list(header_dict.keys())
-        df_new.to_csv(self.TMP_FILE_TITLE, sep = ',')
+        df_new.to_csv(self.TMP_FILE_TITLE, sep = default.csv_delim)
 
         print('temporary file saved to', self.TMP_FILE_TITLE)
   
