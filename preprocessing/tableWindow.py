@@ -178,7 +178,7 @@ class tableWindow(QtWidgets.QWidget):
                 
                 le = QtWidgets.QLineEdit(self)
                 
-                if self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s] > 0               
+                if self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s] > 0 :              
                     le.setText(str(self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(self.AGENT_NAMES[i] + s)
