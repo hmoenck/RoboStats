@@ -155,7 +155,7 @@ class mainWindow(QtWidgets.QMainWindow):
     
         # up to now this function gets only called by TableWindow
         self.TMP_FILE = tmp_file
-        df = pd.read_csv(tmp_file, header = 0, sep = ',')
+        df = pd.read_csv(tmp_file, header = 0, sep = default.csv_delim)
 
         self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0])
         self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1])
@@ -193,7 +193,7 @@ class mainWindow(QtWidgets.QMainWindow):
         return toto
         
     def changeTime(self):
-        df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
+        df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
         t = df['time'].values
         f = df['frames'].values
         
@@ -218,7 +218,7 @@ class mainWindow(QtWidgets.QMainWindow):
     def plot_trajectory(self): 
         
         r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
-        df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
+        df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
                 
         d = {}
         start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
@@ -277,7 +277,7 @@ class mainWindow(QtWidgets.QMainWindow):
         if smooth == None: 
             pass
         else: 
-            df = pd.read_csv(self.TMP_FILE, header = 0, sep = ',')
+            df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
             if smooth ==  'MedFilter, k=5': 
                 for an in self.INFO['agent_names']:
                     df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
