@@ -6,4 +6,6 @@ agent_specifications = ['_x', '_y', '_angle']
 agent_columns = [5,6,7,10,11,13]
 
 tmp_file = 'tmp.csv'
-csv_delim = ';'
+csv_delim = ','
+
+time_format = "'%a %b %d %H:%M:%S %Y'"
