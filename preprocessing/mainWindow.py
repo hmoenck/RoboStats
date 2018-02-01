@@ -18,7 +18,7 @@ import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 import settings.default_params as default
 #import plot_functions as my_plt
-from generate_stats_file import makeFile
+import data_processing.generate_stats_file import genStats
 
 class mainWindow(QtWidgets.QMainWindow):
 
@@ -265,7 +265,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         
         df.to_csv(results_folder + '/timelines.csv', sep = default.csv_delim)   
-        makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
+        genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
 #        with open(results_folder + '/info.txt', 'w') as info_file: 
 #            for key in self.INFO: 
 #                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
