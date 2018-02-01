@@ -29,6 +29,7 @@ import numpy as np
 
 
 
+
 class plotWindow(QtWidgets.QDialog):
 #TODO make more general
     def __init__(self, data, rect, parent = None):
@@ -51,12 +52,14 @@ class plotWindow(QtWidgets.QDialog):
         #layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
-        
-        self.plot()
-
-    def plot(self):
-        ''' plot trajectory '''
         ax = self.figure.add_subplot(111)
+        
+        self.plot(ax)
+        self.canvas.draw()
+
+    def plot(self, ax):
+        ''' plot trajectory '''
+        #ax = self.figure.add_subplot(111)
 
         # discards the old graph
         ax.clear()
@@ -68,8 +71,9 @@ class plotWindow(QtWidgets.QDialog):
         ax.add_patch(patches.Rectangle(*self.rect, fill = False, linewidth = 5))
         
         ax.legend()
+        ax.savefig('fig.png')
         #ax.xlim(self.rect[0][0]-5, self.rect[0][0] +self.rect[1] +5)
         #ax.ylim(self.rect[0][1]-5, self.rect[0][1] +self.rect[2] +5)
        
-        self.canvas.draw()
+        #self.canvas.draw()
 
