@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import csv
-
-#from PyQt4 import QtGui, QtCore
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui 
 import pandas as pd
@@ -18,7 +16,6 @@ class agentWindow(QtWidgets.QWidget):
     ''' takes a list of default agent names from parent window and allows to change agent number and names'''
 
     def __init__(self, parentWindow, agent_names = []):
-    #def __init__(self, parent = None, agent_names = []):
     
         self.nAgents = len(agent_names)
         self.AGENT_NAMES = agent_names
@@ -27,7 +24,6 @@ class agentWindow(QtWidgets.QWidget):
         self.custom_names = []
     
         super(agentWindow, self).__init__(parentWindow)
-        #super(agentWindow, self).__init__(parent)
         self.parentWindow = parentWindow
 
         self.home()
@@ -96,7 +92,7 @@ class agentWindow(QtWidgets.QWidget):
         if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates   
             print(self.AGENT_NAMES)     
             self.parentWindow.AGENT_NAMES = self.AGENT_NAMES   
-            self.parentWindow.update_checklabels(init = False)
+            self.parentWindow.update_checklabels()
             self.parentWindow.draw_agent_names(init = False) 
             self.home.close()      
         else: 
