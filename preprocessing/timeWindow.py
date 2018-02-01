@@ -14,6 +14,8 @@ import sys
 import settings.data_settings as ds
 
 
+
+#TODO: breaks if slider is moved too far
 class timeWindow(QtWidgets.QWidget):
 
     def __init__(self, parentWindow, time, frames):
