@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#from PyQt4 import QtGui, QtCore
+
 
 from PyQt5 import QtWidgets 
 from PyQt5.QtGui import QFont   
 
-
+import os
 import pandas as pd
 import numpy as np
 import datetime
@@ -17,11 +17,13 @@ import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 import settings.default_params as default
+#import plot_functions as my_plt
+from generate_stats_file import makeFile
 
 class mainWindow(QtWidgets.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
-            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False, 'agent_names': default.agent_names}
+            'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
             
     TMP_FILE = default.tmp_file
     
@@ -144,8 +146,8 @@ class mainWindow(QtWidgets.QMainWindow):
     def on_Button_clicked(self): 
     
         data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
-        print(data_name)
         print('selected file: ', data_name)
+        self.INFO['data_file'] = data_name
         self.table = tableWindow(self, data_name)
         self.table.show()        
         #self.updateInfo(self.TMP_FILE_INFO)
@@ -234,11 +236,11 @@ class mainWindow(QtWidgets.QMainWindow):
     def stats_and_save(self): 
         df, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
         
-        name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
+        #name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
         
         # order columns of df
         time = ['frames', 'time']
-        agents = self.INFO ['agent_names']
+        agents = self.INFO['agent_names']
         specs = ['_x', '_y', '_angle']
 
         cols = df.columns
@@ -259,16 +261,16 @@ class mainWindow(QtWidgets.QMainWindow):
         df = df.reindex_axis(new_order, axis = 1)
         print(new_order)
         
-        df.to_csv(name)
+        results_folder = self.makeResultsDir(default.results)
         
         
-
-#        now = datetime.datetime.now()
-#        now_str = now.strftime("%Y_%m_%d_%H_%M")
-#        with open('info' + now_str + '.txt', 'w') as info_file: 
+        df.to_csv(results_folder + '/timelines.csv', sep = default.csv_delim)   
+        makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
+#        with open(results_folder + '/info.txt', 'w') as info_file: 
 #            for key in self.INFO: 
 #                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
-                
+    
+        #my_plt.plot_trajectory(results_folder)
         self.home.close()
         
         
@@ -287,12 +289,39 @@ class mainWindow(QtWidgets.QMainWindow):
                     
                     
     def send_info(self, text): 
-        
+        '''Sends information dialogue '''
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Information)
         msg.setText(text)
         msg.setWindowTitle("INFO")
         retval = msg.exec_()
+        
+        
+        
+    def makeResultsDir(self, base_folder):
+        '''Creates a folder labeled with the current date. Each calling of the processing unit will create a 
+        new numbered subfolder '''
+
+        now = datetime.datetime.now()
+        now_str = now.strftime("%Y_%m_%d")
+        dir_str = base_folder + now_str
+
+        try:
+            os.makedirs(dir_str)
+        except OSError:
+            pass
+            
+        created_subfolder = False
+        i = 0
+        while not created_subfolder: 
+            subfolder_name = '{0:03}'.format(i)
+            try:
+                os.makedirs(dir_str + '/' + subfolder_name)
+                created_subfolder = True
+            except OSError:
+                i +=1
+                
+        return dir_str + '/' + subfolder_name
 
 if __name__ == "__main__":
     import sys
