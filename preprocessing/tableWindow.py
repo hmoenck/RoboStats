@@ -15,6 +15,7 @@ from numpy import random
 import sys
 from agentWindow import agentWindow
 import settings.default_params as default
+import json
 
 
 class tableWindow(QtWidgets.QWidget):
@@ -31,18 +32,9 @@ class tableWindow(QtWidgets.QWidget):
         super(tableWindow, self).__init__(parentWindow)
         self.parentWindow = parentWindow
         self.fileName = fileName #name of the selected csv
+         
+        self.initParams()
         
-        self.AGENT_NAMES = default.agent_names #default naming for agents
-        self.AGENT_DATA = default.agent_specifications #default agent info
-        self.TIME_LABELS = default.time_labels   
-        self.agentLEs = []
-        
-        # the check labels dictionary contains the lables and default values for all columns to set
-        self.checkLabels = {}
-        self.update_checklabels(init = True)
-
-
-
         self.nColumns = 0 #number of columns of the original file 
         
         self.DELIMINATER = default.csv_delim # default deliminator for reading
@@ -130,22 +122,14 @@ class tableWindow(QtWidgets.QWidget):
                 self.model.appendRow(items)
  
                 
-    def update_checklabels(self, init = False): 
+    def update_checklabels(self): 
         ''' the checkLabels dictionary conatins the names and indices of all selected columns. 
         When called with init= True, the default values (specified in settings/default_params.py) 
         will be used for initilaization, otherwise the columns will be initialized with -1.''' 
 
-        if init == True or len(self.AGENT_NAMES)*len(self.AGENT_DATA) == len(default.agent_columns): 
-            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
-            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : default.agent_columns[i*len(self.AGENT_DATA)+k] 
-            for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
-            
-        else: 
-            self.checkLabels = {'TIME': {self.TIME_LABELS[i] : default.time_columns[i] for i in range(len(self.TIME_LABELS))}, 
-            'AGENTS': {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : -1 
-            for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))}} 
+        self.checkLabels['AGENTS'] = {self.AGENT_NAMES[i] + self.AGENT_DATA[k] : -1 
+        for k in range(len(self.AGENT_DATA)) for i in range(len(self.AGENT_NAMES))} 
         
-        print(self.checkLabels)            
                 
     def setColumn(self): 
         ''' reacts to changes in the text-edit field for column selection'''  
@@ -157,9 +141,9 @@ class tableWindow(QtWidgets.QWidget):
                 self.checkLabels[key][senderName] = sender.text()
     
     def draw_agent_names(self, init = False): 
-        ''' creates a lable and text-edit widget for each agent and agent-property (x, y, angle). Any 
+        ''' creates a label and text-edit widget for each agent and agent-property (x, y, angle). Any 
         preexisting widgets are deleted. This allows to change the agent number/names dynamically. The Widgets are 
-        populated with te valued found in checkLables, if a checkLabels entry is -1 the value will not e drawn.'''
+        populated with te valued found in checkLabels, if a checkLabels entry is -1 the value will not e drawn.'''
         
         # this block deletes old widgets if there are any
         if init == False: 
@@ -178,7 +162,7 @@ class tableWindow(QtWidgets.QWidget):
                 
                 le = QtWidgets.QLineEdit(self)
                 
-                if self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s] > 0 :              
+                if int(self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s]) > 0 :              
                     le.setText(str(self.checkLabels['AGENTS'][self.AGENT_NAMES[i] + s]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(self.AGENT_NAMES[i] + s)
@@ -247,6 +231,22 @@ class tableWindow(QtWidgets.QWidget):
   
         self.parentWindow.INFO['agent_names'] = self.AGENT_NAMES
         self.parentWindow.init_Info(self.TMP_FILE_TITLE)
+        
+        
+        #save paramter settings to json
+        param_dict = {}
+        param_dict['agent_names'] = self.AGENT_NAMES
+        param_dict['time_labels'] = self.TIME_LABELS
+        param_dict['agent_specifications'] = self.AGENT_DATA
+        
+        for key1 in self.checkLabels: 
+            for key2 in self.checkLabels[key1]:
+                param_dict[key2] = self.checkLabels[key1][key2]
+        
+        with open(default.params, 'w') as fp:
+            json.dump(param_dict, fp)
+        
+        
         self.home.close()
         
   
@@ -264,10 +264,27 @@ class tableWindow(QtWidgets.QWidget):
         msg.setText("I can't do anything yet")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         val = msg.exec_()
-
         
-
-
+    def initParams(self): 
+    
+        # maybe check should be saved to json as a whole
+        param_dict = json.load(open(default.params))
+        
+        self.AGENT_NAMES = param_dict['agent_names'] 
+        self.TIME_LABELS = param_dict['time_labels']
+        self.AGENT_DATA = param_dict['agent_specifications']
+        self.agentLEs = []
+        
+        self.checkLabels = {'TIME': {self.TIME_LABELS[i] : param_dict[self.TIME_LABELS[i]] for i in range(len(self.TIME_LABELS))}, 
+            'AGENTS': {}} 
+                
+        for k in range(len(self.AGENT_NAMES)): 
+            for j in range(len(self.AGENT_DATA)): 
+                key = self.AGENT_NAMES[k]+self.AGENT_DATA[j]    
+                self.checkLabels['AGENTS'][key] = param_dict[key]
+        print(self.checkLabels)
+        
+        
 #if __name__ == "__main__":
 #    import sys
 
