@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 import csv
 
-#import sip
-#sip.setapi('QString', 2)
-#sip.setapi('QVariant', 2)
 import sip
-#from PyQt4 import QtGui, QtCore
+
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui # for QFont, QStandardItemModel
+from PyQt5 import QtCore
 
 import pandas as pd
 from numpy import random
@@ -16,6 +14,32 @@ import sys
 from agentWindow import agentWindow
 import settings.default_params as default
 import json
+
+
+class PandasModel(QtCore.QAbstractTableModel):
+    """
+    Class to populate a table view with a pandas dataframe
+    """
+    def __init__(self, data, parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent)
+        self._data = data
+
+    def rowCount(self, parent=None):
+        return len(self._data.values)
+
+    def columnCount(self, parent=None):
+        return self._data.columns.size
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if index.isValid():
+            if role == QtCore.Qt.DisplayRole:
+                return str(self._data.values[index.row()][index.column()])
+        return None
+
+    def setheaderData(self, col, orientation, role):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self._data.columns[col]
+        return None
 
 
 class tableWindow(QtWidgets.QWidget):
@@ -32,25 +56,27 @@ class tableWindow(QtWidgets.QWidget):
         super(tableWindow, self).__init__(parentWindow)
         self.parentWindow = parentWindow
         self.fileName = fileName #name of the selected csv
+        self.nColumns = 0 #number of columns of the original file 
          
         self.initParams()
-        
-        self.nColumns = 0 #number of columns of the original file 
-        
-        self.DELIMINATER = default.csv_delim # default deliminator for reading
 
         self.home()
         
         
     def home(self): 
-    
-        self.model = QtGui.QStandardItemModel(self)
 
+        #self.model = QtGui.QStandardItemModel(self)
+        df = pd.read_csv(self.fileName, sep = default.csv_delim_read, skiprows = default.skip_rows_read)
+        print(df.columns)
+        self.nColumns = len(df.columns)
+        self.model = PandasModel(df)
+        
+        
         self.tableView = QtWidgets.QTableView(self)
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setStretchLastSection(True)
         
-        self.set_table()
+        #self.set_table()
 
         # ---------------------------------------------------------------------
         # COLUMN LAYOUT
@@ -79,7 +105,7 @@ class tableWindow(QtWidgets.QWidget):
         # ---------------------------------------------------------------------
    
         self.saveButton = QtWidgets.QPushButton(self)
-        self.saveButton.setText("Save")
+        self.saveButton.setText("OK")
         self.saveButton.clicked.connect(self.save)
         
         self.addParamsButton = QtWidgets.QPushButton(self)
@@ -112,14 +138,16 @@ class tableWindow(QtWidgets.QWidget):
         self.home.show()
 
 
-    def set_table(self): 
-        '''opens the selcted .csv and populates the table'''
-        with open(self.fileName, "r") as fileInput:
-        #fileInput = open(self.fileName, 'r')
-            for row in csv.reader(fileInput, delimiter = self.DELIMINATER):   
-                self.nColumns = len(row) 
-                items = [QtGui.QStandardItem(field) for field in row]
-                self.model.appendRow(items)
+#    def set_table(self): 
+#        '''opens the selcted .csv and populates the table'''
+#        with open(self.fileName, "r") as fileInput:
+#        #fileInput = open(self.fileName, 'r')
+#        #df = pd.read_csv(self.fileName, header = None, sep = default.csv_delim_read, skiprows = default.skip_rows_read, names = [str(i) for i in range(self.nColumns)])
+#            for row in csv.reader(fileInput, delimiter = self.DELIMINATER): 
+#        #for _, row in df.iterrows():
+#                self.nColumns = len(row) 
+#                items = [QtGui.QStandardItem(field) for field in row]
+#                self.model.appendRow(items)
  
                 
     def update_checklabels(self): 
@@ -220,7 +248,7 @@ class tableWindow(QtWidgets.QWidget):
             for k in self.checkLabels[key].keys(): 
                 header_dict[k] = self.checkLabels[key][k]
         
-        df = pd.read_csv(fileName, header = None, sep = default.csv_delim , names = [str(i) for i in range(self.nColumns)])
+        df = pd.read_csv(fileName, header = None, sep = default.csv_delim_read , skiprows = default.skip_rows_read, names = [str(i) for i in range(self.nColumns)])
         
         real_indices = [str(int(cl) -1) for cl in header_dict.values()]
         df_new = df.loc[:, real_indices]
@@ -284,16 +312,4 @@ class tableWindow(QtWidgets.QWidget):
                 self.checkLabels['AGENTS'][key] = param_dict[key]
         print(self.checkLabels)
         
-        
-#if __name__ == "__main__":
-#    import sys
 
-#    data = '/home/claudia/Dokumente/Uni/lab_rotation_FU/data/TracksRoboLife/CouzinDataOutWedMar01132818201.csv'
-
-#    app = QtWidgets.QApplication(sys.argv)
-#    app.setApplicationName('Table View')
-
-#    main = tableWindow(data)
-#    main.show()
-
-#    sys.exit(app.exec_())
