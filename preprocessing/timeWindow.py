@@ -42,7 +42,7 @@ class timeWindow(QtWidgets.QWidget):
         self.StartTimeSlider.valueChanged.connect(self.set_time)
         self.StartTimeSlider.setRange(0, len(self.TIME))
         
-        self.StartTime = QtWidgets.QLineEdit(self.START_STOP['start_time'])
+        self.StartTime = QtWidgets.QLineEdit(str(self.START_STOP['start_time']))
         self.StartFrame = QtWidgets.QLineEdit(str(self.START_STOP['start_frame']))
         
         
@@ -56,7 +56,7 @@ class timeWindow(QtWidgets.QWidget):
         self.StopTimeSlider.valueChanged.connect(self.set_time)
         
         
-        self.StopTime = QtWidgets.QLineEdit(self.START_STOP['stop_time'])
+        self.StopTime = QtWidgets.QLineEdit(str(self.START_STOP['stop_time']))
         self.StopFrame = QtWidgets.QLineEdit(str(self.START_STOP['stop_frame']))
         
         
@@ -90,20 +90,21 @@ class timeWindow(QtWidgets.QWidget):
         self.START_STOP[senderName + '_frame'] = self.FRAMES[sender.value()]
         
         if senderName.find('start') > -1: 
-            self.StartTime.setText(self.TIME[sender.value()])
+            self.StartTime.setText(str(self.TIME[sender.value()]))
             self.StartFrame.setText(str(self.FRAMES[sender.value()]))
             
         elif senderName.find('stop') > -1: 
-            self.StopTime.setText(self.TIME[sender.value()])
+            self.StopTime.setText(str(self.TIME[sender.value()]))
             self.StopFrame.setText(str(self.FRAMES[sender.value()]))
             
         self.parentWindow.update_dicts(self.parentWindow.INFO, self.START_STOP)
 
 
     def clickedOK(self): 
+        time_format = self.parentWindow.INFO['info']['time']
     
-        self.START_STOP['start_time'] = ds.handle_timestamp(self.START_STOP['start_time'])
-        self.START_STOP['stop_time'] = ds.handle_timestamp(self.START_STOP['stop_time'])
+        self.START_STOP['start_time'] = ds.handle_timestamp(self.START_STOP['start_time'], time_format)
+        self.START_STOP['stop_time'] = ds.handle_timestamp(self.START_STOP['stop_time'], time_format)
     
         self.parentWindow.update_dicts(self.parentWindow.INFO, self.START_STOP)
         self.parentWindow.update_labels()
