@@ -17,11 +17,11 @@ class agentWindow(QtWidgets.QWidget):
 
     def __init__(self, parentWindow, agent_names = []):
     
-        self.nAgents = len(agent_names)
-        self.AGENT_NAMES = agent_names
+        self.nAgents = len(agent_names) # number of agents 
+        self.AGENT_NAMES = agent_names  # names of agents
         
-        self.labels = []
-        self.custom_names = []
+        self.labels = [] # holds the agent labels i.e agent0, agent1, ...
+        self.custom_names = [] # holds the line  edit elements for entering new names
     
         super(agentWindow, self).__init__(parentWindow)
         self.parentWindow = parentWindow
@@ -29,7 +29,7 @@ class agentWindow(QtWidgets.QWidget):
         self.home()
         
     def home(self): 
-        self.nAgentsEdit = QtWidgets.QLineEdit()
+        self.nAgentsEdit = QtWidgets.QLineEdit() # line edit element for changing agent number
         self.nAgentsEdit.setText(str(self.nAgents))
         self.nAgentsEdit.setValidator(QtGui.QIntValidator())
 
@@ -92,8 +92,7 @@ class agentWindow(QtWidgets.QWidget):
         if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates   
             print(self.AGENT_NAMES)     
             self.parentWindow.AGENT_NAMES = self.AGENT_NAMES   
-            self.parentWindow.update_checklabels()
-            self.parentWindow.draw_agent_names(init = False) 
+            self.parentWindow.update_checklabels('AGENTS')
             self.home.close()      
         else: 
             self.send_warning()
