@@ -163,18 +163,20 @@ class mainWindow(QtWidgets.QMainWindow):
 
 
     def init_Info(self, tmp_file): 
+        # called only by tableWindow
     
         # up to now this function gets only called by TableWindow
         self.TMP_FILE = tmp_file
         df = pd.read_csv(tmp_file, header = 0, sep = default.csv_delim)
-
-        self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0])
-        self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1])
+        
+        time_format = self.INFO['info']['time']
+        self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format)
+        self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1], time_format)
         
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
         
-        self.INFO['duration_time'] = type(df['time'].values[-1])
+        self.INFO['duration_time'] = self.INFO['start_time'] - self.INFO['stop_time']
         self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])
         
         print([min(df[an + '_x'].values) for an in self.INFO['agent_names']])
@@ -188,9 +190,14 @@ class mainWindow(QtWidgets.QMainWindow):
         
     def update_labels(self): 
 
-        self.startInfo.setText('Start: ' + str(self.INFO['start_time']) + '\t(' + str(self.INFO['start_frame']) + ')')
-        self.stopInfo.setText('Stop: '+ str(self.INFO['stop_time']) + '\t(' + str(self.INFO['stop_frame']) + ')')
-        self.durationInfo.setText('Duration: ' + str(self.INFO['stop_time'] - self.INFO['start_time']) + '\t(' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
+        self.startInfo.setText('Start: ' + str(self.INFO['start_time']) + '\t (' + str(self.INFO['start_frame']) + ')')
+        self.stopInfo.setText('Stop: '+ str(self.INFO['stop_time']) + '\t (' + str(self.INFO['stop_frame']) + ')')
+        if self.INFO['info']['time'] in ['s', 'ms']: 
+            dur = np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2)
+        elif self.INFO['info']['time'] == 'dt': 
+            dur = self.INFO['stop_time'] - self.INFO['start_time']
+            
+        self.durationInfo.setText('Duration: ' + str(dur) + '\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
         
         for key in self.Border_sizes: 
             self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
