@@ -10,13 +10,10 @@ from PyQt5 import QtWidgets
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-#from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 #from matplotlib.figure import Figure
 
-#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
 
@@ -44,12 +41,13 @@ class plotWindow(QtWidgets.QDialog):
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
-        #self.toolbar = NavigationToolbar(self.canvas, self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
 
 
         # set the layout
         layout = QtWidgets.QVBoxLayout()
-        #layout.addWidget(self.toolbar)
+        layout.addWidget(self.toolbar)
+        print(self.toolbar.toolitems)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
         ax = self.figure.add_subplot(111)
@@ -71,9 +69,9 @@ class plotWindow(QtWidgets.QDialog):
         ax.add_patch(patches.Rectangle(*self.rect, fill = False, linewidth = 5))
         
         ax.legend()
-        ax.savefig('fig.png')
+        #ax.savefig('fig.png')
         #ax.xlim(self.rect[0][0]-5, self.rect[0][0] +self.rect[1] +5)
         #ax.ylim(self.rect[0][1]-5, self.rect[0][1] +self.rect[2] +5)
        
-        #self.canvas.draw()
+        self.canvas.draw()
 
