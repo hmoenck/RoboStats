@@ -14,26 +14,20 @@ import sip
 
 
 class settingsWindow(QtWidgets.QWidget):
-    ''' takes a list of default agent names from parent window and allows to change agent number and names'''
+    ''' Allows to set time format (datetime, milliseconds or seconds), angle format (deg or rad), and additional parameters'''
 
-    #def __init__(self, parentWindow):
-    def __init__(self):
+    def __init__(self, parentWindow):
+    #def __init__(self):
     
 
-        self.TimeOptions = ['Frames', 'Datetime', 'Milliseconds', 'Seconds']
-        self.TimeOptionsDict = {'Frames':2, 'Datetime':2, 'Milliseconds':0, 'Seconds':0}
+        self.TimeOptions = ['frames', 'datetime', 'milliseconds', 'seconds']
+        self.TimeOptionsShort = {'datetime':'dt', 'milliseconds':'ms', 'seconds':'s'}
         self.AngleOptions = ['deg', 'rad']
-        self.AngleOptionsDict = {'deg':2, 'rad':0}
         self.AdditionalOptions = ['Region', 'RoboMode']
-        self.AdditionalOptionsDict = {'Region':0, 'RoboMode':0}
-        self.AdditionalOptionsEmpty = 3
-        
-        self.labels = []
-        self.custom_names = []
     
-        #super(settingsWindow, self).__init__(parentWindow)
-        super(settingsWindow, self).__init__()
-        #self.parentWindow = parentWindow
+        super(settingsWindow, self).__init__(parentWindow)
+        #super(settingsWindow, self).__init__()
+        self.parentWindow = parentWindow
 
         self.home()
         
@@ -41,26 +35,38 @@ class settingsWindow(QtWidgets.QWidget):
 
         self.mainLayout = QtWidgets.QVBoxLayout()
         
+        # ---------------------------------------------------------------------
+        # TIME LAYOUT
+        # ---------------------------------------------------------------------
         self.timeLayout = QtWidgets.QGridLayout()
-        self.timeBG = QtWidgets.QButtonGroup()
+        self.timeBG = QtWidgets.QButtonGroup() # button group for exclusive selection of one option
         self.initCheckBoxLayout(self.TimeOptions, 'time')
         
+        # ---------------------------------------------------------------------
+        # ANGLE LAYOUT
+        # ---------------------------------------------------------------------       
         self.angleLayout = QtWidgets.QGridLayout()
-        self.angleBG = QtWidgets.QButtonGroup()
+        self.angleBG = QtWidgets.QButtonGroup() # button group for exclusive selection of one option
         self.initCheckBoxLayout(self.AngleOptions,'angle')
-        
+                
+        # ---------------------------------------------------------------------
+        # ADDITIONAL PARAMS LAYOUT
+        # ---------------------------------------------------------------------     
         self.additionalLayout = QtWidgets.QVBoxLayout()
+        self.AdditionalOptionsCB = [] # list of all checkboxes for additional parameters
         self.initCheckBoxLayout2()
         
+        # ---------------------------------------------------------------------
+        # ADDITIONAL PARAMS LAYOUT
+        # ---------------------------------------------------------------------   
         self.buttonLayout = QtWidgets.QHBoxLayout()
         self.applyButton = QtWidgets.QPushButton('Apply')
-        self.applyButton.clicked.connect(self.pushed_ok)
-        self.defaultButton = QtWidgets.QPushButton('Set as Default')
-        self.defaultButton.clicked.connect(self.pushed_ok)
-        
-        self.buttonLayout.addWidget(self.defaultButton)
+        self.applyButton.clicked.connect(self.pushed_apply)
         self.buttonLayout.addWidget(self.applyButton)
-
+        
+        # ---------------------------------------------------------------------
+        # ADD SUBLAYOUTS TO MAIN LAYOUT
+        # ---------------------------------------------------------------------
         self.mainLayout.addWidget(QtWidgets.QLabel('Time:'))
         self.mainLayout.addLayout(self.timeLayout)
         self.mainLayout.addWidget(self.HLine())
@@ -76,93 +82,52 @@ class settingsWindow(QtWidgets.QWidget):
         self.home.setLayout(self.mainLayout)
         self.home.show()
 
-
-    
-    def pushed_ok(self): 
-        self.min_checked()
-        pass
             
     def initCheckBoxLayout(self, lables, layout): 
+        ''' initialization of time and angle layout'''
 
         for k, t in enumerate(lables):    
-            to = QtWidgets.QCheckBox(t)
+            cb = QtWidgets.QCheckBox(t)
             
             if layout == 'time':
-                self.timeLayout.addWidget(to, np.floor(k/2.),k%2) 
-                if to.text() == 'Frames': 
-                    to.setCheckState(True)
-                    to.setEnabled(False)
+                self.timeLayout.addWidget(cb, np.floor(k/2.),k%2) 
+                if cb.text() == 'frames': 
+                    cb.setCheckState(2)
+                    cb.setEnabled(False)
                 else: 
-                    self.timeBG.addButton(to)
+                    if cb.text() == 'datetime': 
+                        cb.setCheckState(2)
+                    self.timeBG.addButton(cb)
 
             elif layout == 'angle':
-                self.angleLayout.addWidget(to, np.floor(k/2.),k%2)
-                self.angleBG.addButton(to) 
+                if cb.text() == 'deg': 
+                    cb.setCheckState(2)
+                self.angleLayout.addWidget(cb, np.floor(k/2.),k%2)
+                self.angleBG.addButton(cb) 
 
-         
-        if layout == 'time': 
-            self.timeBG.buttonClicked[QtWidgets.QAbstractButton].connect(self.btnstate)
-        else: 
-            self.angleBG.buttonClicked[QtWidgets.QAbstractButton].connect(self.btnstate)
-         
-         
-        #self.angleBG.buttonClicked[QtWidgets.QAbstractButton].connect(self.btnstate)
-#        self.bg = QtWidgets.QButtonGroup()
-#        #bg.setExclusive(True)
-#        for k, t in enumerate(lables):    
-#            to = QtWidgets.QCheckBox(t)
-#            #to.setObjectName(t)
-#            #to.setCheckState(values[t])
-#            #to.stateChanged.connect(self.update_checkbox)
 
-#            if layout == 'time':
-#                self.timeLayout.addWidget(to, np.floor(k/2.),k%2) 
-#                self.bg.addButton(to)     
-##                if to.objectName() == 'Frames': 
-##                    to.setEnabled(False)
-##                else: self.bg.addButton(to)
-#                #self.bg.buttonClicked[QtWidgets.QAbstractButton].connect(self.update_checkbox)
-
-#                      
-#            elif layout == 'angle':             
-#                self.angleLayout.addWidget(to, np.floor(k/2.),k%2)
-#        print(self.bg.buttons)##
-    def btnstate(self, b): 
-        print(b.text())
-     
-        
     def initCheckBoxLayout2(self): 
-        
+        ''' initialization of the additionalLayout. All Options listed in AdditionalOptions are displayed with a checkBox, 
+        multiple selection is possible'''
+    
         for k, opt in enumerate(self.AdditionalOptions): 
-            to = QtWidgets.QCheckBox(opt)
-            to.setObjectName(opt)
-            to.setCheckState(self.AdditionalOptionsDict[opt])
-            to.stateChanged.connect(self.update_checkbox)
-            self.additionalLayout.addWidget(to)
-        
-        for empt in range(self.AdditionalOptionsEmpty): 
-            le = QtWidgets.QLineEdit('Enter additional category')
-            self.additionalLayout.addWidget(le)
+            cb = QtWidgets.QCheckBox(opt)
+            self.additionalLayout.addWidget(cb)
+            self.AdditionalOptionsCB.append(cb)       
+            
+            
+    def pushed_apply(self): 
+        ''' if applyButton is pushed, the selected settings are sent to parent window. settingsWindow is closed'''
 
-                
-    def update_checkbox(self):
-        ''' updated the values in the TimeOptionsDict whenever a checkbox value is changed'''
-        pass
-#        sender = self.sender()
-#        name = sender.objectName()
-#        state = sender.checkState()
-#        print(state)
-#        if name in self.TimeOptions: 
-#            self.TimeOptionsDict[name] = state
-#            print(self.TimeOptionsDict)
-#        elif name in self.AngleOptions: 
-#            self.AngleOptionsDict[name] = state
-#            print(self.AngleOptionsDict)
+        self.parentWindow.PARAM_INFO['time'] = self.TimeOptionsShort[self.timeBG.checkedButton().text()]
+        self.parentWindow.draw_time_labels(init = False) 
         
-    def min_checked(self): 
-        ''' checks whether at least one of the time options was selected '''
-        if sum(list(self.TimeOptionsDict.values())) <= 0: 
-            self.send_warning('you must select at least one')
+        self.parentWindow.PARAM_INFO['angle'] = self.angleBG.checkedButton().text()
+        self.parentWindow.draw_agent_names(init = False) 
+        
+        self.parentWindow.OTHER = [b.text() for b in self.AdditionalOptionsCB if b.isChecked()]
+        self.parentWindow.update_checklabels('OTHER')
+        self.home.close()
 
             
     def send_warning(self, text): 
@@ -172,6 +137,7 @@ class settingsWindow(QtWidgets.QWidget):
         msg.setText(text)
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         retval = msg.exec_()
+ 
         
     def HLine(self):
         ''' adds a sunken horizontal line to the display'''
