@@ -3,12 +3,14 @@
 
 
 from PyQt5 import QtWidgets 
+from PyQt5 import QtGui
 from PyQt5.QtGui import QFont   
 
 import os
 import pandas as pd
 import numpy as np
 import datetime
+import sip
 from tableWindow import tableWindow
 from timeWindow import timeWindow
 from coordinateWindow import coordinateWindow
@@ -17,8 +19,9 @@ import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 import settings.default_params as default
+import data_processing.generate_stats_file as genStats
 #import plot_functions as my_plt
-import data_processing.generate_stats_file import genStats
+
 
 class mainWindow(QtWidgets.QMainWindow):
 
@@ -27,10 +30,12 @@ class mainWindow(QtWidgets.QMainWindow):
             
     TMP_FILE = default.tmp_file
     
-    SMOOTHING = ['None', 'MedFilter, k=5']
+    SMOOTHING = ['Select Filter', 'MedFilter, k=5']
+    
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
+        self.setFixedSize(500,400)
         self.home()
 
     def home(self): 
@@ -62,6 +67,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.changeTimeButton = QtWidgets.QPushButton('Change')
         self.changeTimeButton.setFixedWidth(100)
         self.changeTimeButton.clicked.connect(self.changeTime)
+        self.changeTimeButton.setEnabled(False)
         
         
         self.timeLayout.addWidget(self.startInfo)
@@ -77,16 +83,20 @@ class mainWindow(QtWidgets.QMainWindow):
         self.spaceLayout = QtWidgets.QGridLayout()
         
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
-        self.Border_info = []
+
+        self.Border_sizes = {}
         
         for j, b in enumerate(borders):   
-            border = QtWidgets.QLabel( b +': ----')
-            border.setObjectName(b)
-            self.spaceLayout.addWidget(border, 0, j)
-            self.Border_info.append(border)
+            border = QtWidgets.QLabel( b + ':')
+            border_size = QtWidgets.QLabel('----')
+            border_size.setObjectName(b)
+            self.spaceLayout.addWidget(border, np.floor(j /2.), (j%2)*2)
+            self.spaceLayout.addWidget(border_size, np.floor(j /2.), (j%2)*2+1)
+            self.Border_sizes[b] = border_size
             
         self.changeCoordsButton = QtWidgets.QPushButton('Change')
         self.changeCoordsButton.setFixedWidth(100)
+        self.changeCoordsButton.setEnabled(False)
         self.changeCoordsButton.clicked.connect(self.changeCoords)
 
         self.spaceLayout.addWidget(self.changeCoordsButton)
@@ -112,8 +122,7 @@ class mainWindow(QtWidgets.QMainWindow):
         # final layout
         #------------------------------------------------------------
         self.finalLayout = QtWidgets.QVBoxLayout()
-
-        
+  
         self.plotButton = QtWidgets.QPushButton('Plot')
         self.plotButton.clicked.connect(self.plot_trajectory)
         
@@ -183,9 +192,10 @@ class mainWindow(QtWidgets.QMainWindow):
         self.stopInfo.setText('Stop: '+ str(self.INFO['stop_time']) + '\t(' + str(self.INFO['stop_frame']) + ')')
         self.durationInfo.setText('Duration: ' + str(self.INFO['stop_time'] - self.INFO['start_time']) + '\t(' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
         
-        for border in self.Border_info: 
-            border.setText(border.objectName() + ': ' + str(np.round(self.INFO[border.objectName()], 2)))
-
+        for key in self.Border_sizes: 
+            self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
+        self.changeCoordsButton.setEnabled(True)
+        self.changeTimeButton.setEnabled(True)
         
     def HLine(self):
     
@@ -202,14 +212,34 @@ class mainWindow(QtWidgets.QMainWindow):
         self.time = timeWindow(self, t, f)
         self.time.show()   
         
-    def changeCoords(self): 
+    def changeCoords(self):
+     
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
-        coords = {}
-        for b in borders: 
-            coords[b] = self.INFO[b]
+
+        for key in self.Border_sizes: 
+            self.INFO[key] = np.round(float(self.Border_sizes[key].text()), 2)
+            self.spaceLayout.removeWidget(self.Border_sizes[key])
+            sip.delete(self.Border_sizes[key])
             
-        self.coordinates = coordinateWindow(self, coords)
-        self.coordinates.show()  
+        self.Border_sizes = {}
+        
+        if self.changeCoordsButton.text() == 'Change':
+        
+            for i, b in enumerate(borders): 
+                le = QtWidgets.QLineEdit(str(self.INFO[b]))
+                le.setValidator(QtGui.QDoubleValidator())
+                self.Border_sizes[b] = le
+                self.spaceLayout.addWidget(le, np.floor(i /2.), (i%2)*2+1)
+            self.changeCoordsButton.setText('Ok')
+            
+        elif self.changeCoordsButton.text() == 'Ok':
+        
+            for i, b in enumerate(borders): 
+                l = QtWidgets.QLabel(str(self.INFO[b]))
+                self.Border_sizes[b] = l
+                self.spaceLayout.addWidget(l, np.floor(i /2.), (i%2)*2+1)
+            self.changeCoordsButton.setText('Change')
+
 
     def update_dicts(self, dict1, dict2): 
     
@@ -234,7 +264,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.trajectoryWindow.exec_()
         
     def stats_and_save(self): 
-        df, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
+        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
         
         #name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
         
@@ -265,12 +295,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         
         df.to_csv(results_folder + '/timelines.csv', sep = default.csv_delim)   
-        genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
-#        with open(results_folder + '/info.txt', 'w') as info_file: 
-#            for key in self.INFO: 
-#                info_file.write(key + '\t' + str(self.INFO[key]) + '\n')
-    
-        #my_plt.plot_trajectory(results_folder)
+        genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
         self.home.close()
         
         
@@ -328,6 +353,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName('main')
+    #app.setGeometry(500, 600)
 
     main = mainWindow()
     main.show()
