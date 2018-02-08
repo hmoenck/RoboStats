@@ -24,13 +24,13 @@
 
     ----- > see also: HowTo.pdf (detailed description of procedure with screenshots)
 
-    #### Before loading data: 
+    *Before loading data*: 
     
     - Click 'Browse' to select a file for file selection (any filetype other than csv wil cause error)
     - Adjust settings of the chosen file (deliminator, skiplines)
     - Click 'Load' to open a Table view of selected data
     
-    #### In Table Window: 
+    *In Table Window*: 
     
     - Match each variable with the corresponding column in the original file, settings will be saved for later user
         -- minimum number of variables: 5, i.e. columns for frame number, time, agents x and y position and angle
@@ -39,7 +39,7 @@
     - 'Add Parameters'-Button: opens a subwindow where you can set the time format (s, ms or datetime), the angle format (deg, rad)
        and add additional Categorie such as RoboMode and Region (not yet used for statistics)
        
-    #### After loading data: 
+    *After loading data*: 
     
     - after leaving the Table View the data in from the selected columns are used to display start and stop time as well as the min and max values of position. Both time and space boundaries can be adjusted via the respective 'Change'- Buttons and analysis will only be performed for the selected range. 
     
