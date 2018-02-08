@@ -2,18 +2,18 @@
 
 ### Imports: 
 
-    PyQt5
-    sip
-    pandas
-    numpy
-    matplotlib 
-    seaborn
-    json
-    datetime
-    os, sys
+   - PyQt5
+   - sip
+   - pandas
+   - numpy
+   - matplotlib 
+   - seaborn
+   - json
+   - datetime
+   - os, sys
     
 ### Start via: 
-    python3 mainWindow.py
+   python3 mainWindow.py
 
 ### Input: 
    - csv File containing (at least) columns for: 
@@ -22,7 +22,7 @@
     
 ### Procedure: 
 
-    ----- > see also: HowTo.pdf (detailed description of procedure with screenshots)
+   ----- > see also: HowTo.pdf (detailed description of procedure with screenshots)
 
    ##### Before loading data: 
     
