@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import csv
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui 
 from PyQt5 import QtCore
@@ -31,6 +30,9 @@ class settingsWindow(QtWidgets.QWidget):
         super(settingsWindow, self).__init__(parentWindow)
         #super(settingsWindow, self).__init__()
         self.parentWindow = parentWindow
+        
+        #self.CSV_INFO_FILE = self.parentWindow.CSV_INFO_FILE
+        self.PARAM_INFO_FILE = self.parentWindow.PARAM_INFO_FILE
 
         self.home()
         
@@ -89,7 +91,7 @@ class settingsWindow(QtWidgets.QWidget):
     def initCheckBoxLayout(self, lables, layout): 
         ''' initialization of time and angle layout'''
         
-        param_dict = json.load(open(default.params))
+        param_dict = json.load(open(self.PARAM_INFO_FILE))
         defaults = param_dict['info']
         
         chosen_time_format = self.key_by_value(self.TimeOptionsShort, defaults['time']) 
@@ -131,11 +133,11 @@ class settingsWindow(QtWidgets.QWidget):
     def pushed_apply(self): 
         ''' if applyButton is pushed, the selected settings are sent to parent window. settingsWindow is closed'''
         
-        param_dict = json.load(open(default.params))
+        param_dict = json.load(open(self.PARAM_INFO_FILE))
         param_dict['info']['time'] = self.TimeOptionsShort[self.timeBG.checkedButton().text()]
         param_dict['info']['angle'] = self.angleBG.checkedButton().text()
         
-        with open(default.params, 'w') as fp:
+        with open(self.PARAM_INFO_FILE, 'w') as fp:
             json.dump(param_dict, fp)
 
         self.parentWindow.PARAM_INFO['time'] = self.TimeOptionsShort[self.timeBG.checkedButton().text()]
