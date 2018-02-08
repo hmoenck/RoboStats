@@ -53,10 +53,10 @@
 ### Outputs: 
    1. timelines.csv with columns: 
 
-	-frames, 
-	-time (in selected format), 
-	-distance between pairs of agents 
-	-for each agent: 
+        - frames, 
+	- time (in selected format), 
+	- distance between pairs of agents 
+	- for each agent: 
 		- x-position, 
 		- y-position, 
 		- angle, 
@@ -67,14 +67,14 @@
 		
     2. info.csv
     
-    - source: original datafile
-    - x_min: selected border value
-    - x_max: selected border value
-    - y_min: selected border value
-    - y_max: selected border value
-    - Start: selected start time
-    - Stop: selected stop time
-    - Filtered: true or false dependeing on wheter or not smoothing was applied 
+    	- source: original datafile
+    	- x_min: selected border value
+    	- x_max: selected border value
+    	- y_min: selected border value
+    	- y_max: selected border value
+    	- Start: selected start time
+    	- Stop: selected stop time
+    	- Filtered: true or false dependeing on wheter or not smoothing was applied 
 
     For each agent:
 	    - trajectory_length: total lengh of agents trajectory
