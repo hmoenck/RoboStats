@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.5
 # -*- coding: utf-8 -*-
 
 
@@ -13,7 +13,7 @@ import datetime
 import sip
 from tableWindow import tableWindow
 from timeWindow import timeWindow
-from coordinateWindow import coordinateWindow
+#from coordinateWindow import coordinateWindow
 from plotWindow import plotWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
@@ -21,6 +21,7 @@ import settings.data_settings as ds
 import settings.default_params as default
 import data_processing.generate_stats_file as genStats
 #import plot_functions as my_plt
+import json
 
 
 class mainWindow(QtWidgets.QMainWindow):
@@ -31,6 +32,7 @@ class mainWindow(QtWidgets.QMainWindow):
     TMP_FILE = default.tmp_file
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
+
     
 
     def __init__(self, parent = None):
@@ -47,12 +49,45 @@ class mainWindow(QtWidgets.QMainWindow):
         # select layout
         #------------------------------------------------------------
         
-        self.selectLayout = QtWidgets.QHBoxLayout()
+        #self.selectLayout = QtWidgets.QHBoxLayout()
         
-        self.selectData = QtWidgets.QPushButton('Set Data Columns')
-        self.selectData.clicked.connect(self.on_Button_clicked)
+        self.selectedFile = QtWidgets.QLineEdit()
+        self.browseButton = QtWidgets.QPushButton('Browse')
+        self.browseButton.clicked.connect(self.on_browse_clicked)
         
-        self.selectLayout.addWidget(self.selectData)       
+        self.delimLabel = QtWidgets.QLabel('File deliminator')
+        self.setDelim = QtWidgets.QLineEdit()
+        self.skipRowsLabel = QtWidgets.QLabel('Skip rows')
+        self.setSkipRows = QtWidgets.QLineEdit()
+        self.setSkipRows.setValidator(QtGui.QIntValidator())
+        self.init_browse_info()
+        
+        self.openInView = QtWidgets.QCheckBox('view')
+        self.openInView.setCheckState(2)
+        self.openInView.setEnabled(False)
+        
+        self.loadButton = QtWidgets.QPushButton('Load')
+        self.loadButton.clicked.connect(self.on_load_clicked)
+        
+        
+        self.selectUpper = QtWidgets.QHBoxLayout()
+        self.selectUpper.addWidget(self.selectedFile)
+        self.selectUpper.addWidget(self.browseButton)
+        
+        self.selectLower = QtWidgets.QHBoxLayout()
+        self.selectLower.addWidget(self.delimLabel)
+        self.selectLower.addWidget(self.setDelim)
+        self.selectLower.addWidget(self.skipRowsLabel)
+        self.selectLower.addWidget(self.setSkipRows)
+        self.selectLower.addWidget(self.openInView)
+        self.selectLower.addWidget(self.loadButton)
+        #self.selectData = QtWidgets.QPushButton('Set Data Columns')
+        #self.selectData.clicked.connect(self.on_Button_clicked)
+        
+        #self.selectLayout.addWidget(self.selectData)       
+        self.selectLayout = QtWidgets.QVBoxLayout()
+        self.selectLayout.addLayout(self.selectUpper)
+        self.selectLayout.addLayout(self.selectLower)
         
         #------------------------------------------------------------
         # time layout
@@ -152,15 +187,35 @@ class mainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.home)
 
     
-    def on_Button_clicked(self): 
-    
+    def init_browse_info(self): 
+        csv_dict = json.load(open(default.csv_info))
+        self.setDelim.setText(csv_dict['delim_read'])
+        self.setSkipRows.setText(str(csv_dict['skip_rows_read']))
+        
+            
+    def on_browse_clicked(self): 
         data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
-        print('selected file: ', data_name)
-        self.INFO['data_file'] = data_name
-        self.table = tableWindow(self, data_name)
-        self.table.show()        
-        #self.updateInfo(self.TMP_FILE_INFO)
 
+        if data_name.find('csv') < 0: 
+            self.send_warning('Not a valid file type. Please use a file of type .csv .')
+        else: 
+            self.selectedFile.setText(data_name)
+            self.INFO['data_file'] = data_name
+            print( self.INFO['data_file'])
+            
+    def on_load_clicked(self): 
+        csv_dict = json.load(open(default.csv_info))
+        print(csv_dict)
+        csv_dict['delim_read'] = self.setDelim.text()
+        print(self.setDelim.text())
+        csv_dict['skip_rows_read'] = int(self.setSkipRows.text())
+        with open(default.csv_info, 'w') as fp:
+            json.dump(csv_dict, fp)
+        
+        self.table = tableWindow(self, self.INFO['data_file'])
+        self.table.show()        
+        
+    
 
     def init_Info(self, tmp_file): 
         # called only by tableWindow
@@ -328,6 +383,13 @@ class mainWindow(QtWidgets.QMainWindow):
         msg.setWindowTitle("INFO")
         retval = msg.exec_()
         
+    def send_warning(self, text): 
+        '''Sends information dialogue '''
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(text)
+        msg.setWindowTitle("Warning")
+        retval = msg.exec_()
         
         
     def makeResultsDir(self, base_folder):
