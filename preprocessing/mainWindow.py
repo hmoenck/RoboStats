@@ -32,6 +32,8 @@ class mainWindow(QtWidgets.QMainWindow):
     TMP_FILE = default.tmp_file
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
+    CSV_INFO_FILE = 'settings/csv_info.json'
+    PARAM_INFO_FILE = 'settings/dict_data.json'
 
     
 
@@ -188,7 +190,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
     
     def init_browse_info(self): 
-        csv_dict = json.load(open(default.csv_info))
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
         self.setDelim.setText(csv_dict['delim_read'])
         self.setSkipRows.setText(str(csv_dict['skip_rows_read']))
         
@@ -204,12 +206,11 @@ class mainWindow(QtWidgets.QMainWindow):
             print( self.INFO['data_file'])
             
     def on_load_clicked(self): 
-        csv_dict = json.load(open(default.csv_info))
-        print(csv_dict)
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
         csv_dict['delim_read'] = self.setDelim.text()
         print(self.setDelim.text())
         csv_dict['skip_rows_read'] = int(self.setSkipRows.text())
-        with open(default.csv_info, 'w') as fp:
+        with open(self.CSV_INFO_FILE, 'w') as fp:
             json.dump(csv_dict, fp)
         
         self.table = tableWindow(self, self.INFO['data_file'])
@@ -277,7 +278,7 @@ class mainWindow(QtWidgets.QMainWindow):
     def changeCoords(self):
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
-
+        print(self.INFO)
         for key in self.Border_sizes: 
             self.INFO[key] = np.round(float(self.Border_sizes[key].text()), 2)
             self.spaceLayout.removeWidget(self.Border_sizes[key])
@@ -301,7 +302,7 @@ class mainWindow(QtWidgets.QMainWindow):
                 self.Border_sizes[b] = l
                 self.spaceLayout.addWidget(l, np.floor(i /2.), (i%2)*2+1)
             self.changeCoordsButton.setText('Change')
-
+        print(self.INFO)
 
     def update_dicts(self, dict1, dict2): 
     
@@ -331,7 +332,7 @@ class mainWindow(QtWidgets.QMainWindow):
         #name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
         
         # order columns of df
-        time = ['frames', 'time']
+        time = ['frames', 'time', 'seconds']
         agents = self.INFO['agent_names']
         specs = ['_x', '_y', '_angle']
 
