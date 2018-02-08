@@ -76,7 +76,7 @@
     	- Stop: selected stop time
     	- Filtered: true or false dependeing on wheter or not smoothing was applied 
 
-    For each agent:
+    	- For each agent:
 	    - trajectory_length: total lengh of agents trajectory
 	    - mean_speed
 	    - var_speed
@@ -86,7 +86,7 @@
 	    - 75% speed
 	    - max speed
 	    
-    For each pair of agents: 
+    	- For each pair of agents:  
 	    - mean_dist
 	    - var_dist
 	    - min_dist
