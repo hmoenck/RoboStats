@@ -10,6 +10,9 @@ from numpy import random
 import numpy as np
 import sys
 import sip
+import json
+import settings.default_params as default
+
 
 
 
@@ -85,7 +88,13 @@ class settingsWindow(QtWidgets.QWidget):
             
     def initCheckBoxLayout(self, lables, layout): 
         ''' initialization of time and angle layout'''
-
+        
+        param_dict = json.load(open(default.params))
+        defaults = param_dict['info']
+        
+        chosen_time_format = self.key_by_value(self.TimeOptionsShort, defaults['time']) 
+        chosen_angle_format = defaults['angle']
+        
         for k, t in enumerate(lables):    
             cb = QtWidgets.QCheckBox(t)
             
@@ -95,29 +104,39 @@ class settingsWindow(QtWidgets.QWidget):
                     cb.setCheckState(2)
                     cb.setEnabled(False)
                 else: 
-                    if cb.text() == 'datetime': 
+                    if cb.text() == chosen_time_format:
                         cb.setCheckState(2)
                     self.timeBG.addButton(cb)
 
             elif layout == 'angle':
-                if cb.text() == 'deg': 
+                if cb.text() == chosen_angle_format:
                     cb.setCheckState(2)
                 self.angleLayout.addWidget(cb, np.floor(k/2.),k%2)
+
                 self.angleBG.addButton(cb) 
 
 
     def initCheckBoxLayout2(self): 
         ''' initialization of the additionalLayout. All Options listed in AdditionalOptions are displayed with a checkBox, 
         multiple selection is possible'''
-    
+
         for k, opt in enumerate(self.AdditionalOptions): 
             cb = QtWidgets.QCheckBox(opt)
+            if opt in self.parentWindow.OTHER: 
+                cb.setCheckState(2)
             self.additionalLayout.addWidget(cb)
             self.AdditionalOptionsCB.append(cb)       
             
             
     def pushed_apply(self): 
         ''' if applyButton is pushed, the selected settings are sent to parent window. settingsWindow is closed'''
+        
+        param_dict = json.load(open(default.params))
+        param_dict['info']['time'] = self.TimeOptionsShort[self.timeBG.checkedButton().text()]
+        param_dict['info']['angle'] = self.angleBG.checkedButton().text()
+        
+        with open(default.params, 'w') as fp:
+            json.dump(param_dict, fp)
 
         self.parentWindow.PARAM_INFO['time'] = self.TimeOptionsShort[self.timeBG.checkedButton().text()]
         self.parentWindow.draw_time_labels(init = False) 
@@ -146,6 +165,12 @@ class settingsWindow(QtWidgets.QWidget):
         toto.setFrameShadow(QtWidgets.QFrame.Sunken)
         return toto
         
+        
+    def key_by_value(self, dictionary, goal_value): 
+
+        for key, value in dictionary.items():
+            if value == goal_value:
+                return key
 
             
         
