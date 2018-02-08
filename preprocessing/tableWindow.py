@@ -38,8 +38,8 @@ class PandasModel(QtCore.QAbstractTableModel):
         return None
 
     def setheaderData(self, col, orientation, role):
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return self._data.columns[col]
+#        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+#            return self._data.columns[col]
         return None
 
 
@@ -50,6 +50,7 @@ class tableWindow(QtWidgets.QWidget):
     #the name of the resulting file will be passed back to the main window            
     TMP_FILE_TITLE = default.tmp_file
 
+
     def __init__(self, parentWindow, fileName):
     #def __init__(self, fileName):
 
@@ -58,17 +59,27 @@ class tableWindow(QtWidgets.QWidget):
         self.parentWindow = parentWindow
         self.fileName = fileName #name of the selected csv
         self.nColumns = 0 #number of columns of the original file 
-         
+        
+        self.PARAM_INFO_FILE = self.parentWindow.PARAM_INFO_FILE
+        self.CSV_INFO_FILE = self.parentWindow.CSV_INFO_FILE
+        
         self.initParams()
+        self.initCsvParams()
 
         self.home()
         
         
     def home(self): 
 
-
-        df = pd.read_csv(self.fileName, sep = default.csv_delim_read, skiprows = default.skip_rows_read)
+        try: 
+            df = pd.read_csv(self.fileName, sep = self.delim_read, header = None, skiprows = self.skip_rows_read)
+        except pd.errors.ParserError: 
+            self.send_warning("There seems to be a problem with the file you're trying to open. \n\nThis is usually due to missing values. Please delete incomplete rows and try again.")
+            self.close()
+            
         print(df.columns)
+        
+        
         self.nColumns = len(df.columns)
         self.model = PandasModel(df)
         
@@ -150,7 +161,7 @@ class tableWindow(QtWidgets.QWidget):
         
         elif key == 'OTHER': 
             self.checkLabels['OTHER'] = {self.OTHER[i] : -1 for i in range(len(self.OTHER))}
-            self.draw_additional_labels()
+            self.draw_additional_labels(init = False)
         
                 
     def setColumn(self): 
@@ -164,6 +175,17 @@ class tableWindow(QtWidgets.QWidget):
                 
     
     def draw_additional_labels(self, init = True): 
+    
+        if init == False:   
+            for k in range(len(self.otherLEs)): 
+                self.otherParamsLayout.removeWidget(self.otherLEs[k])
+                sip.delete(self.otherLEs[k])
+                
+                self.otherParamsLayout.removeWidget(self.otherLabels[k])
+                sip.delete(self.otherLabels[k])
+            
+        self.otherLEs = []
+        self.otherLabels = []
         
         if len(self.OTHER) < 1: 
             pass
@@ -174,8 +196,9 @@ class tableWindow(QtWidgets.QWidget):
                 self.otherLabels.append(cb)
                 
                 le = QtWidgets.QLineEdit(self)
-                if self.checkLabels['OTHER'][key] > 0: 
-                    le.setText(str(self.checkLabels['TIME'][key]))
+                print(self.checkLabels)
+                if int(self.checkLabels['OTHER'][key]) > 0: 
+                    le.setText(str(self.checkLabels['OTHER'][key]))
                 le.textChanged.connect(self.setColumn)
                 le.setObjectName(key)
                 le.setValidator(QtGui.QIntValidator())
@@ -205,7 +228,7 @@ class tableWindow(QtWidgets.QWidget):
             self.timeLables.append(cb)
             
             le = QtWidgets.QLineEdit(self)
-            if self.checkLabels['TIME'][key] > 0: 
+            if int(self.checkLabels['TIME'][key]) > 0: 
                 le.setText(str(self.checkLabels['TIME'][key]))
             le.textChanged.connect(self.setColumn)
             le.setObjectName(key)
@@ -303,8 +326,8 @@ class tableWindow(QtWidgets.QWidget):
             for k in self.checkLabels[key].keys(): 
                 header_dict[k] = self.checkLabels[key][k]
         
-        df = pd.read_csv(fileName, header = None, sep = default.csv_delim_read , 
-                         skiprows = default.skip_rows_read, 
+        df = pd.read_csv(fileName, header = None, sep = self.delim_read, 
+                         skiprows = self.skip_rows_read, 
                          names = [str(i) for i in range(self.nColumns)])
         
         real_indices = [str(int(cl) -1) for cl in header_dict.values()]
@@ -329,7 +352,7 @@ class tableWindow(QtWidgets.QWidget):
             for key2 in self.checkLabels[key1]:
                 param_dict[key2] = self.checkLabels[key1][key2]
         
-        with open(default.params, 'w') as fp:
+        with open(self.PARAM_INFO_FILE, 'w') as fp:
             json.dump(param_dict, fp)
         
         
@@ -347,12 +370,11 @@ class tableWindow(QtWidgets.QWidget):
     
         self.sw = settingsWindow(self)
         self.sw.show() 
-        print('hi', self.TIME_LABELS)
         
     def initParams(self): 
     
         # maybe check should be saved to json as a whole
-        param_dict = json.load(open(default.params))
+        param_dict = json.load(open(self.PARAM_INFO_FILE))
         
         self.AGENT_NAMES = param_dict['agent_names'] 
         self.TIME_LABELS = param_dict['time_labels']
@@ -374,6 +396,11 @@ class tableWindow(QtWidgets.QWidget):
                 key = self.AGENT_NAMES[k]+self.AGENT_DATA[j]    
                 self.checkLabels['AGENTS'][key] = param_dict[key]
         print(self.checkLabels)
+    
+    def initCsvParams(self):
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        self.delim_read = csv_dict['delim_read']
+        self.skip_rows_read = int(csv_dict['skip_rows_read'])
 
 
 if __name__ == "__main__":
