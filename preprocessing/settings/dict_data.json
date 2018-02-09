@@ -1,1 +1,1 @@
-{"time": 2, "agent_names": ["robo", "fish"], "other": [], "robo_x": "7", "info": {"angle": "deg", "time": "ms"}, "frames": 1, "robo_y": "8", "robo_angle": "9", "fish_x": "19", "fish_angle": "21", "fish_y": "20", "agent_specifications": ["_x", "_y", "_angle"], "time_labels": ["frames", "time"]}
+{"agent_specifications": ["_x", "_y", "_angle"], "other": [], "muesli_x": "7", "time": "2", "muesli_y": "8", "time_labels": ["frames", "time"], "frames": 1, "agent_names": ["muesli"], "info": {"angle": "deg", "time": "ms"}, "muesli_angle": "9"}

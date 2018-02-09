@@ -1,1 +1,1 @@
-{"skip_rows_read": 0, "delim_read": ";"}
+{"read": {"comment": "#", "delim": ";", "skip_rows": 0}, "write": {"delim": ","}}
