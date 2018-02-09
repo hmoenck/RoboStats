@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from collections import Counter
-import settings.default_params as default
 import json
 from scipy.stats import mode
 
@@ -9,16 +8,16 @@ from scipy.stats import mode
 
 # build dict with single value stats!
 
-def stats_and_save(filename, info): 
+def stats_and_save(filename, info, csv_info_file, param_info_file): 
 
     INDIVIDUAL_STATS = ['_vx', '_vy', '_speed']
     COLLECTIVE_STATS = ['_dist']
     SINGLE_VALUE_STATS = {'order':[]}
     
-    csv_info = json.load(open(default.csv_info))
-    delim = csv_info['delim_write']
+    csv_info = json.load(open(csv_info_file))
+    delim = csv_info['write']['delim']
     
-    data_info = json.load(open(default.params))
+    data_info = json.load(open(param_info_file))
     time_format = data_info['info']['time']
 
     df = pd.read_csv(filename, header = 0, sep = delim)
