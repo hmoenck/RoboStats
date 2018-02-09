@@ -47,7 +47,6 @@ class plotWindow(QtWidgets.QDialog):
         # set the layout
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.toolbar)
-        print(self.toolbar.toolitems)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
         ax = self.figure.add_subplot(111)
