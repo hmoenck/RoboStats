@@ -7,13 +7,13 @@ import sip
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui # for QFont, QStandardItemModel
 from PyQt5 import QtCore
-
+import numpy as np
 import pandas as pd
 from numpy import random
 import sys
 from agentWindow import agentWindow
 from settingsWindow import settingsWindow
-import settings.default_params as default
+#import settings.default_params as default
 import json
 
 
@@ -48,7 +48,7 @@ class tableWindow(QtWidgets.QWidget):
     columns (with respective names) will be saved as 'tmp.csv' to be further processed by main window'''
 
     #the name of the resulting file will be passed back to the main window            
-    TMP_FILE_TITLE = default.tmp_file
+    #TMP_FILE_TITLE = default.tmp_file
 
 
     def __init__(self, parentWindow, fileName):
@@ -62,19 +62,31 @@ class tableWindow(QtWidgets.QWidget):
         
         self.PARAM_INFO_FILE = self.parentWindow.PARAM_INFO_FILE
         self.CSV_INFO_FILE = self.parentWindow.CSV_INFO_FILE
+        self.TMP_FILE_TITLE = self.parentWindow.TMP_FILE
         
         self.initParams()
-        self.initCsvParams()
+
 
         self.home()
         
         
     def home(self): 
+    
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
 
         try: 
-            df = pd.read_csv(self.fileName, sep = self.delim_read, header = None, skiprows = self.skip_rows_read)
+            delim = csv_dict['read']['delim']
+            skip_rows = csv_dict['read']['skip_rows']
+            comment = csv_dict['read']['comment']
+            df = pd.read_csv(self.fileName, sep = delim, comment = comment, skiprows = skip_rows)
+            vals = df.count(axis = 1).values # number of non-NaN values per row
+            maxx = df.count(axis = 1).max() # maximum number of non-NaN values per row
+            delete_rows = len(np.where(vals < maxx)[0])
+            self.send_info('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), detail = 'Indices of ignored rows: {}'.format(np.where(vals < maxx)[0]))
+            df = df.dropna(how = 'any')
+            
         except pd.errors.ParserError: 
-            self.send_warning("There seems to be a problem with the file you're trying to open. \n\nThis is usually due to missing values. Please delete incomplete rows and try again.")
+            self.send_warning("There seems to be a problem with the file you're trying to open.\n\nThis is usually due to missing values. Please delete incomplete rows and try again.")
             self.close()
             
         print(df.columns)
@@ -321,19 +333,32 @@ class tableWindow(QtWidgets.QWidget):
     def build_csv(self, fileName): 
         ''' uses the selected columns to build a temporary pandas frame which is saved to .csv under a default name.'''
         header_dict ={}
-    
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['read']['delim']
+        skip_rows = csv_dict['read']['skip_rows']
+        comment = csv_dict['read']['comment']
+        
         for key in self.checkLabels.keys(): 
             for k in self.checkLabels[key].keys(): 
                 header_dict[k] = self.checkLabels[key][k]
         
-        df = pd.read_csv(fileName, header = None, sep = self.delim_read, 
-                         skiprows = self.skip_rows_read, 
+        df = pd.read_csv(fileName, header = None, sep = delim, 
+                         skiprows = skip_rows, 
+                         comment = comment, 
                          names = [str(i) for i in range(self.nColumns)])
         
         real_indices = [str(int(cl) -1) for cl in header_dict.values()]
         df_new = df.loc[:, real_indices]
         df_new.columns = list(header_dict.keys())
-        df_new.to_csv(self.TMP_FILE_TITLE, sep = default.csv_delim)
+        df_new = df_new.dropna(how = 'any')    
+        
+        print(header_dict)
+        print(df_new['frames'].values)
+        if type(df_new['frames'].values[0]) == str: #drop original header
+            df_new = df_new.drop(df.index[0])
+        
+        delim = csv_dict['write']['delim']
+        df_new.to_csv(self.TMP_FILE_TITLE, sep = delim)
 
         print('temporary file saved to', self.TMP_FILE_TITLE)
   
@@ -397,11 +422,26 @@ class tableWindow(QtWidgets.QWidget):
                 self.checkLabels['AGENTS'][key] = param_dict[key]
         print(self.checkLabels)
     
-    def initCsvParams(self):
-        csv_dict = json.load(open(self.CSV_INFO_FILE))
-        self.delim_read = csv_dict['delim_read']
-        self.skip_rows_read = int(csv_dict['skip_rows_read'])
 
+    def send_warning(self, text): 
+        ''' creates a Qt warning message with custom text''' 
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setWindowTitle("Warning")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setText(text)
+        val = msg.exec_()
+
+    def send_info(self, text, detail = 'Sometimes more is better. But not always.'): 
+        ''' creates a Qt info message with custom text''' 
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Information)
+        msg.setWindowTitle("Info")
+        msg.setDetailedText(detail)
+        #msg.setInformativeText(detail)
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setText(text)
+        val = msg.exec_()
 
 if __name__ == "__main__":
     import sys
