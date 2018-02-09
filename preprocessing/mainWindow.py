@@ -13,14 +13,11 @@ import datetime
 import sip
 from tableWindow import tableWindow
 from timeWindow import timeWindow
-#from coordinateWindow import coordinateWindow
 from plotWindow import plotWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
-import settings.default_params as default
 import data_processing.generate_stats_file as genStats
-#import plot_functions as my_plt
 import json
 
 
@@ -29,7 +26,7 @@ class mainWindow(QtWidgets.QMainWindow):
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
             'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
             
-    TMP_FILE = default.tmp_file
+    TMP_FILE = 'tmp.csv' 
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
     CSV_INFO_FILE = 'settings/csv_info.json'
@@ -192,8 +189,8 @@ class mainWindow(QtWidgets.QMainWindow):
     
     def init_browse_info(self): 
         csv_dict = json.load(open(self.CSV_INFO_FILE))
-        self.setDelim.setText(csv_dict['delim_read'])
-        self.setSkipRows.setText(str(csv_dict['skip_rows_read']))
+        self.setDelim.setText(csv_dict['read']['delim'])
+        self.setSkipRows.setText(str(csv_dict['read']['skip_rows']))
         
             
     def on_browse_clicked(self): 
@@ -208,9 +205,8 @@ class mainWindow(QtWidgets.QMainWindow):
             
     def on_load_clicked(self): 
         csv_dict = json.load(open(self.CSV_INFO_FILE))
-        csv_dict['delim_read'] = self.setDelim.text()
-        print(self.setDelim.text())
-        csv_dict['skip_rows_read'] = int(self.setSkipRows.text())
+        csv_dict['read']['delim'] = self.setDelim.text()
+        csv_dict['read']['skip_rows'] = int(self.setSkipRows.text())
         with open(self.CSV_INFO_FILE, 'w') as fp:
             json.dump(csv_dict, fp)
         
@@ -223,8 +219,11 @@ class mainWindow(QtWidgets.QMainWindow):
         # called only by tableWindow
     
         # up to now this function gets only called by TableWindow
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['write']['delim']
+        
         self.TMP_FILE = tmp_file
-        df = pd.read_csv(tmp_file, header = 0, sep = default.csv_delim)
+        df = pd.read_csv(tmp_file, header = 0, sep = delim)
         
         time_format = self.INFO['info']['time']
         self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
@@ -236,7 +235,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.INFO['duration_time'] = self.INFO['start_time'] - self.INFO['stop_time']
         self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])
         
-        print([min(df[an + '_x'].values) for an in self.INFO['agent_names']])
+
         self.INFO['x_min'] = min(min(df[an + '_x'].values) for an in self.INFO['agent_names'])
         self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
         self.INFO['x_max'] = max(max(df[an + '_x'].values) for an in self.INFO['agent_names'])
@@ -269,7 +268,9 @@ class mainWindow(QtWidgets.QMainWindow):
         return toto
         
     def changeTime(self):
-        df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['write']['delim']
+        df = pd.read_csv(self.TMP_FILE, header = 0, sep = delim)
         t = df['time'].values
         f = df['frames'].values
         
@@ -279,7 +280,6 @@ class mainWindow(QtWidgets.QMainWindow):
     def changeCoords(self):
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
-        print(self.INFO)
         for key in self.Border_sizes: 
             self.INFO[key] = np.round(float(self.Border_sizes[key].text()), 2)
             self.spaceLayout.removeWidget(self.Border_sizes[key])
@@ -312,9 +312,12 @@ class mainWindow(QtWidgets.QMainWindow):
              
              
     def plot_trajectory(self): 
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['write']['delim']
         
         r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
-        df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
+        df = pd.read_csv(self.TMP_FILE, sep = delim)
+        print(df.columns)
                 
         d = {}
         start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
@@ -355,11 +358,16 @@ class mainWindow(QtWidgets.QMainWindow):
         df = df.reindex_axis(new_order, axis = 1)
         print(new_order)
         
-        results_folder = self.makeResultsDir(default.results)
+        results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        results_folder = self.makeResultsDir(results_folder_super + '/')
         
-        
-        df.to_csv(results_folder + '/timelines.csv', sep = default.csv_delim)   
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['write']['delim']
+        df.to_csv(results_folder + '/timelines.csv', sep = delim)   
         genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
+        
+        print(str(results_folder))
+        self.send_info('Results saved to: ' + str(results_folder))
         self.home.close()
         
         
@@ -368,7 +376,10 @@ class mainWindow(QtWidgets.QMainWindow):
         if smooth == None: 
             pass
         else: 
-            df = pd.read_csv(self.TMP_FILE, header = 0, sep = default.csv_delim)
+            csv_dict = json.load(open(self.CSV_INFO_FILE))
+            delim = csv_dict['write']['delim']
+            
+            df = pd.read_csv(self.TMP_FILE, header = 0, sep = delim)
             if smooth ==  'MedFilter, k=5': 
                 for an in self.INFO['agent_names']:
                     df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
@@ -400,7 +411,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
         now = datetime.datetime.now()
         now_str = now.strftime("%Y_%m_%d")
-        dir_str = base_folder + now_str
+        dir_str = base_folder + 'BioTrackerAnalysis_' + now_str
 
         try:
             os.makedirs(dir_str)
