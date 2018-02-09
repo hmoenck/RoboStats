@@ -15,7 +15,7 @@ csv_delim = ','
 
 #params = '/home/claudia/Dokumente/Uni/lab_rotation_FU/pyQt/preprocessing/settings/dict_data.json'
 
-results = '/home/claudia/Dokumente/Uni/lab_rotation_FU/pyQt/preprocessing/results/'
+#results = '/home/claudia/Dokumente/Uni/lab_rotation_FU/pyQt/preprocessing/results/'
 
 #csv_info = '/home/claudia/Dokumente/Uni/lab_rotation_FU/pyQt/preprocessing/settings/csv_info.json'
 
