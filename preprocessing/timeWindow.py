@@ -28,6 +28,7 @@ class timeWindow(QtWidgets.QWidget):
         super(timeWindow, self).__init__(parentWindow)
         #super(timeWindow, self).__init__()
         self.parentWindow = parentWindow
+        self.DATE_FORMATS_FILE = self.parentWindow.DATE_FORMATS_FILE
         
         self.home()
     
@@ -103,8 +104,8 @@ class timeWindow(QtWidgets.QWidget):
     def clickedOK(self): 
         time_format = self.parentWindow.INFO['info']['time']
     
-        self.START_STOP['start_time'] = ds.handle_timestamp(self.START_STOP['start_time'], time_format)
-        self.START_STOP['stop_time'] = ds.handle_timestamp(self.START_STOP['stop_time'], time_format)
+        self.START_STOP['start_time'] = ds.handle_timestamp(self.START_STOP['start_time'], time_format, self.DATE_FORMATS_FILE)
+        self.START_STOP['stop_time'] = ds.handle_timestamp(self.START_STOP['stop_time'], time_format, self.DATE_FORMATS_FILE)
     
         self.parentWindow.update_dicts(self.parentWindow.INFO, self.START_STOP)
         self.parentWindow.update_labels()
