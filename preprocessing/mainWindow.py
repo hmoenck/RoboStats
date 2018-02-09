@@ -34,6 +34,7 @@ class mainWindow(QtWidgets.QMainWindow):
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
     CSV_INFO_FILE = 'settings/csv_info.json'
     PARAM_INFO_FILE = 'settings/dict_data.json'
+    DATE_FORMATS_FILE = 'settings/date_formats.json'
 
     
 
@@ -226,8 +227,8 @@ class mainWindow(QtWidgets.QMainWindow):
         df = pd.read_csv(tmp_file, header = 0, sep = default.csv_delim)
         
         time_format = self.INFO['info']['time']
-        self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format)
-        self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1], time_format)
+        self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
+        self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
         
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
@@ -327,7 +328,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.trajectoryWindow.exec_()
         
     def stats_and_save(self): 
-        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO)
+        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
         
         #name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
         
