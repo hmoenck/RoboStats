@@ -197,12 +197,16 @@ class mainWindow(QtWidgets.QMainWindow):
 
     
     def init_browse_info(self): 
+        ''' reads information about reading csv files (i.e. seperator and number of rows to skip) from a json-dictionary
+        and uses these values to initialize Line edit elemets that can be adjusted by the user'''
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         self.setDelim.setText(csv_dict['read']['delim'])
         self.setSkipRows.setText(str(csv_dict['read']['skip_rows']))
         
             
     def on_browse_clicked(self): 
+        ''' When the 'Browse' Button is clicked this function opens a File selection dialog, checks wheteher the selected file is 
+        of correct type (csv) and writes the filepath to the upper line edit'''
         data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
 
         if data_name.find('csv') < 0: 
@@ -211,8 +215,11 @@ class mainWindow(QtWidgets.QMainWindow):
             self.selectedFile.setText(data_name)
             self.INFO['data_file'] = data_name
             print( self.INFO['data_file'])
+
             
-    def on_load_clicked(self): 
+    def on_load_clicked(self):
+        ''' When the 'Load' Button is clicked, this function passes the filkename to tableWindow. csv parameters are read in from 
+        the respective line edits, and saved to json for further use'''
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         csv_dict['read']['delim'] = self.setDelim.text()
         csv_dict['read']['skip_rows'] = int(self.setSkipRows.text())
@@ -223,11 +230,9 @@ class mainWindow(QtWidgets.QMainWindow):
         self.table.show()        
         
     
-
     def init_Info(self, tmp_file): 
-        # called only by tableWindow
-    
-        # up to now this function gets only called by TableWindow
+        ''' tableWindow calles this function, when 'Ok' is pressed. The tmp file created by table window is used to initialize
+        information in mainWindow'''
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         
@@ -249,12 +254,14 @@ class mainWindow(QtWidgets.QMainWindow):
         self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
         self.INFO['x_max'] = max(max(df[an + '_x'].values) for an in self.INFO['agent_names'])
         self.INFO['y_max'] = max(max(df[an + '_y'].values)for an in self.INFO['agent_names'])
-
         
         self.update_labels()
+
         
     def update_labels(self): 
-
+        ''' Updates the labels displayed in mainWindow (start/stop/duration time, x/y - min/max). Gets called by timeWindow
+        and the changeCoords function as well as when initializing the disply after loading a new dataset'''
+        
         self.startInfo.setText('Start: ' + str(self.INFO['start_time']) + '\t (' + str(self.INFO['start_frame']) + ')')
         self.stopInfo.setText('Stop: '+ str(self.INFO['stop_time']) + '\t (' + str(self.INFO['stop_frame']) + ')')
         if self.INFO['info']['time'] in ['s', 'ms']: 
@@ -269,14 +276,13 @@ class mainWindow(QtWidgets.QMainWindow):
         self.changeCoordsButton.setEnabled(True)
         self.changeTimeButton.setEnabled(True)
         
-    def HLine(self):
-    
-        toto = QtWidgets.QFrame()
-        toto.setFrameShape(QtWidgets.QFrame.HLine)
-        toto.setFrameShadow(QtWidgets.QFrame.Sunken)
-        return toto
+
         
     def changeTime(self):
+        ''' when the 'Change'Button is clicked on the time Layout, this function opens a 
+        window with sliders to set start and stop time. The selected values are passed back 
+        to mainWindows INFO dictionary'''
+    
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         df = pd.read_csv(self.TMP_FILE, header = 0, sep = delim)
@@ -287,6 +293,9 @@ class mainWindow(QtWidgets.QMainWindow):
         self.time.show()   
         
     def changeCoords(self):
+        ''' when the 'Change'Button is clicked on the space Layout, this function changes the labels for x and y borders 
+        to Line edits where individula changes can be made. The label of the 'Change' Button is set to ok and when presed, the 
+        line edits are switched back to labels and the selected coordinate values are save d to the INFO dictionary.'''
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
         for key in self.Border_sizes: 
@@ -315,12 +324,16 @@ class mainWindow(QtWidgets.QMainWindow):
         print(self.INFO)
 
     def update_dicts(self, dict1, dict2): 
+        ''' updates the values of one dictionary with the values of another, gets called by tableWindow'''
     
         for key in dict2: 
              dict1[key] = dict2[key]
              
              
     def plot_trajectory(self): 
+        ''' When the 'Plot' Button is clicked this function uses the settings for time and space borders and the tmp file 
+        created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
+        
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         
@@ -338,11 +351,17 @@ class mainWindow(QtWidgets.QMainWindow):
         
         self.trajectoryWindow = plotWindow(d, r)
         self.trajectoryWindow.exec_()
+
         
     def stats_and_save(self): 
-        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+        ''' when clickig the 'Stats and Save' Button this function calles the stats and save method from basic stats 
+            which creates two csv files: one with timelines and another with single values (like mean, var, borders, etc.)
+            Then a File selection dialog is opened and at the chosen location a folder is created where the results are saved. 
+            Finally a 'goodbye' dialog is sent informing the user where results were saved and asking wheter they want to 
+            continue or close the application'''
         
-        #name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File', filter ='*.csv')[0]
+        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, 
+                                                          self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
         
         # order columns of df
         time = ['frames', 'time', 'seconds']
@@ -365,7 +384,7 @@ class mainWindow(QtWidgets.QMainWindow):
                     new_order.append(col)
 
         df = df.reindex_axis(new_order, axis = 1)
-        print(new_order)
+        
         
         results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
         results_folder = self.makeResultsDir(results_folder_super + '/')
@@ -376,12 +395,14 @@ class mainWindow(QtWidgets.QMainWindow):
         genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
         
         print(str(results_folder))
-        #self.send_info('Results saved to: ' + str(results_folder))
         self.send_goodbye(results_folder)
-        #self.home.close()
+
         
         
     def apply_smoothing(self):
+        ''' If a filter is selected in the dropdown menu and the 'Apply Smoothing' button is pressed, the respective 
+        smoothing function is applied on the whole trajectory (not only the selected parts). '''
+        
         smooth = str(self.selectSmoothing.currentText())
         if smooth == None: 
             pass
@@ -400,25 +421,31 @@ class mainWindow(QtWidgets.QMainWindow):
                     
     def send_info(self, text): 
         '''Sends information dialogue '''
+        
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Information)
         msg.setText(text)
         msg.setWindowTitle("INFO")
         retval = msg.exec_()
+
         
     def send_warning(self, text): 
-        '''Sends information dialogue '''
+        '''Sends warning dialogue '''
+        
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Warning)
         msg.setText(text)
         msg.setWindowTitle("Warning")
         retval = msg.exec_()
+
         
     def send_goodbye(self, folder): 
         '''Sends information dialogue '''
+        
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Question)
-        msg.setText("Results have been saved to {}. Press 'OK' to continue analysis with a new dataset or press 'Cancel' to close the application.".format(folder))
+        msg.setText("Results have been saved to {}. Press 'OK' to continue analysis with a new dataset or press \
+        'Cancel' to close the application.".format(folder))
         msg.setWindowTitle("Continue?")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
         msg.setDefaultButton(QtWidgets.QMessageBox.Ok)
@@ -428,7 +455,6 @@ class mainWindow(QtWidgets.QMainWindow):
             pass
         else: 
             self.close()
-
 
         
     def makeResultsDir(self, base_folder):
@@ -455,13 +481,24 @@ class mainWindow(QtWidgets.QMainWindow):
                 i +=1
                 
         return dir_str + '/' + subfolder_name
+        
+        
+    def HLine(self):
+        '''Creates a sunken horizontal line.'''
+    
+        toto = QtWidgets.QFrame()
+        toto.setFrameShape(QtWidgets.QFrame.HLine)
+        toto.setFrameShadow(QtWidgets.QFrame.Sunken)
+        return toto
+
+
+
 
 if __name__ == "__main__":
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName('main')
-    #app.setGeometry(500, 600)
 
     main = mainWindow()
     main.show()
