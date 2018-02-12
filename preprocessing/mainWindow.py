@@ -29,9 +29,18 @@ class mainWindow(QtWidgets.QMainWindow):
     TMP_FILE = 'tmp.csv' 
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
-    CSV_INFO_FILE = 'settings/csv_info.json'
-    PARAM_INFO_FILE = 'settings/dict_data.json'
-    DATE_FORMATS_FILE = 'settings/date_formats.json'
+    # TODO Try catch
+
+        
+    try: 
+        CSV_INFO_FILE = 'settings/csv_info.json'
+        PARAM_INFO_FILE = 'settings/dict_data.json'
+        DATE_FORMATS_FILE = 'settings/date_formats.json'
+    except FileNotFoundError:
+        twoFoldersup =  os.path.dirname(os.path.dirname(os.getcwd()))
+        CSV_INFO_FILE = twoFoldersup + 'settings/csv_info.json'
+        PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
+        DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
 
     
 
@@ -367,8 +376,9 @@ class mainWindow(QtWidgets.QMainWindow):
         genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
         
         print(str(results_folder))
-        self.send_info('Results saved to: ' + str(results_folder))
-        self.home.close()
+        #self.send_info('Results saved to: ' + str(results_folder))
+        self.send_goodbye(results_folder)
+        #self.home.close()
         
         
     def apply_smoothing(self):
@@ -404,9 +414,25 @@ class mainWindow(QtWidgets.QMainWindow):
         msg.setWindowTitle("Warning")
         retval = msg.exec_()
         
+    def send_goodbye(self, folder): 
+        '''Sends information dialogue '''
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Question)
+        msg.setText("Results have been saved to {}. Press 'OK' to continue analysis with a new dataset or press 'Cancel' to close the application.".format(folder))
+        msg.setWindowTitle("Continue?")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        msg.setDefaultButton(QtWidgets.QMessageBox.Ok)
+        retval = msg.exec_()
+        
+        if retval == 1024:
+            pass
+        else: 
+            self.close()
+
+
         
     def makeResultsDir(self, base_folder):
-        '''Creates a folder labeled with the current date. Each calling of the processing unit will create a 
+        '''Creates a folder labeled with the current date. Each calling of the processing unit will create a
         new numbered subfolder '''
 
         now = datetime.datetime.now()
