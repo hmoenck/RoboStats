@@ -31,11 +31,9 @@ class mainWindow(QtWidgets.QMainWindow):
     TMP_FILE = 'tmp.csv' 
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
+    STATS_OPTIONS = ['Simple', 'Fancy']
     
     DataLoaded = False
-    
-    
-    # TODO Try catch
 
         
     try: 
@@ -189,23 +187,33 @@ class mainWindow(QtWidgets.QMainWindow):
         self.smoothLayout.addWidget(self.smoothButton)
         
         
-        
         #------------------------------------------------------------
-        # final layout
+        # plot layout
         #------------------------------------------------------------
-        self.finalLayout = QtWidgets.QVBoxLayout()
+        self.plotLayout = QtWidgets.QVBoxLayout()
         
-        self.finalTitle = QtWidgets.QLabel('Finalize')
-        self.finalTitle.setFont(self.titleFont)
-  
+        self.plotTitle = QtWidgets.QLabel('Generate Plots')
+        self.plotTitle.setFont(self.titleFont)
+        
         self.plotButton = QtWidgets.QPushButton('Plot')
         self.plotButton.clicked.connect(self.plot_trajectory)
         
+        self.plotLayout.addWidget(self.plotTitle)
+        self.plotLayout.addWidget(self.plotButton)
+        #------------------------------------------------------------
+        # final layout
+        #------------------------------------------------------------
+        self.finalLayout = QtWidgets.QHBoxLayout()
+
+        self.selectStats= QtWidgets.QComboBox()
+        for s in self.STATS_OPTIONS:    
+            self.selectStats.addItem(s)
+ 
         self.saveButton = QtWidgets.QPushButton('Stats and save')
         self.saveButton.clicked.connect(self.stats_and_save)
         
-        self.finalLayout.addWidget(self.finalTitle)
-        self.finalLayout.addWidget(self.plotButton)
+
+        self.finalLayout.addWidget(self.selectStats)
         self.finalLayout.addWidget(self.saveButton)
         
         #------------------------------------------------------------
@@ -221,6 +229,12 @@ class mainWindow(QtWidgets.QMainWindow):
         self.mainLayout.addWidget(self.HLine())
         self.mainLayout.addLayout(self.smoothLayout)
         self.mainLayout.addWidget(self.HLine())
+        self.mainLayout.addLayout(self.plotLayout)
+        self.mainLayout.addWidget(self.HLine())
+        
+        self.finalTitle = QtWidgets.QLabel('Statistics')
+        self.finalTitle.setFont(self.titleFont)
+        self.mainLayout.addWidget(self.finalTitle)
         self.mainLayout.addLayout(self.finalLayout)
          
 
@@ -409,46 +423,55 @@ class mainWindow(QtWidgets.QMainWindow):
             Then a File selection dialog is opened and at the chosen location a folder is created where the results are saved. 
             Finally a 'goodbye' dialog is sent informing the user where results were saved and asking wheter they want to 
             continue or close the application'''
-        
+        print(self.selectStats.currentText())
         if self.DataLoaded == False: 
             raise Warning('No File loaded')
+            
+            
+        selected_stats = self.selectStats.currentText()
         
-        df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, 
-                                                          self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
         
-        # order columns of df
-        time = ['frames', 'time', 'seconds']
-        agents = self.INFO['agent_names']
-        specs = ['_x', '_y', '_angle']
+        
+        if selected_stats == 'Fancy': 
+            self.send_info("Sorry, I can't do anything fancy yet")
+            pass
+        else: 
+            df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, 
+                                                              self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+            
+            # order columns of df
+            time = ['frames', 'time', 'seconds']
+            agents = self.INFO['agent_names']
+            specs = ['_x', '_y', '_angle']
 
-        cols = df.columns
-        new_order = []
-        for t in time: 
-            new_order.append(t)
+            cols = df.columns
+            new_order = []
+            for t in time: 
+                new_order.append(t)
 
-        for a in agents: 
-            for sp in specs: 
-                new_order.append(a + sp)
-            for in_st in indiv_stats: 
-                new_order.append(a + in_st)
-        for c in coll_stats: 
-            for col in cols: 
-                if col.find(c) > 0: 
-                    new_order.append(col)
+            for a in agents: 
+                for sp in specs: 
+                    new_order.append(a + sp)
+                for in_st in indiv_stats: 
+                    new_order.append(a + in_st)
+            for c in coll_stats: 
+                for col in cols: 
+                    if col.find(c) > 0: 
+                        new_order.append(col)
 
-        df = df.reindex_axis(new_order, axis = 1)
-        
-        
-        results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        results_folder = self.makeResultsDir(results_folder_super + '/')
-        
-        csv_dict = json.load(open(self.CSV_INFO_FILE))
-        delim = csv_dict['write']['delim']
-        df.to_csv(results_folder + '/timelines.csv', sep = delim)   
-        genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
-        
-        print(str(results_folder))
-        self.send_goodbye(results_folder)
+            df = df.reindex_axis(new_order, axis = 1)
+            
+            
+            results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+            results_folder = self.makeResultsDir(results_folder_super + '/')
+            
+            csv_dict = json.load(open(self.CSV_INFO_FILE))
+            delim = csv_dict['write']['delim']
+            df.to_csv(results_folder + '/timelines.csv', sep = delim)   
+            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
+            
+            print(str(results_folder))
+            self.send_goodbye(results_folder)
 
         
         
@@ -501,8 +524,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Question)
-        msg.setText("Results have been saved to {}. Press 'OK' to continue analysis with a new dataset or press \
-        'Cancel' to close the application.".format(folder))
+        msg.setText("Results have been saved to {}. \n Press 'OK' to continue analysis with a new dataset or press 'Cancel' to close the application.".format(folder))
         msg.setWindowTitle("Continue?")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
         msg.setDefaultButton(QtWidgets.QMessageBox.Ok)
