@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import settings.default_params as default
+from stats.correlations import correlation_relative_velocity
 
 def makeFile(folder, csv_file, info, single_values): 
     print(single_values)
@@ -48,6 +49,25 @@ def makeFile(folder, csv_file, info, single_values):
             f.write('median_dist_' + dist[:idx] + sep + str(np.median(df[dist].values)) + '\n')
             f.write('75%_dist_' + dist[:idx] + sep + str(np.percentile(df[dist].values, 75)) + '\n')
             f.write('max_dist_' + dist[:idx] + sep + str(np.max(df[dist].values)) + '\n')
+        
+        for i in range(len(info['agent_names'])): 
+            for j in range(i+1, len(info['agent_names'])): 
+                print('Calculating Pearson relvel correlation between {} and {}'.format(info['agent_names'][i], info['agent_names'][j]))
+                
+                a0 = info['agent_names'][i]
+                a1 = info['agent_names'][j]
+                
+                rho0, p0, rho1, p1 = correlation_relative_velocity(df[a0 + '_x'].values, df[a0 + '_y'].values, 
+                                                                         df[a0 + '_vx'].values, df[a0 + '_vy'].values, 
+                                                                         df[a1 + '_x'].values, df[a1 + '_y'].values, 
+                                                                         df[a1 + '_vx'].values, df[a1 + '_vy'].values, 
+                                                                         corr = 'Pearson')
+                print(rho0, p0, rho1, p1)                                               
+                f.write(a0 + '/' + a1 + '_relvel_corr0_rho(P)' + sep + str(rho0) + '\n' )
+                f.write(a0 + '/' + a1 + '_relvel_corr0_p(P)' + sep + str(p0) + '\n')
+                f.write(a0 + '/' + a1 + '_relvel_corr1_rho(P)' + sep + str(rho1) + '\n')
+                f.write(a0 + '/' + a1 + '_relvel_corr1_p(P)' + sep + str(p1) + '\n')
+        
         
     # transpose csv
     pd.read_csv(name).T.to_csv(name,header=False)
