@@ -29,6 +29,10 @@ class mainWindow(QtWidgets.QMainWindow):
     TMP_FILE = 'tmp.csv' 
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
+    
+    DataLoaded = False
+    
+    
     # TODO Try catch
 
         
@@ -46,19 +50,23 @@ class mainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
-        self.setFixedSize(500,400)
+        self.setFixedSize(600,500)
         self.home()
 
     def home(self): 
 
 
         self.mainLayout = QtWidgets.QVBoxLayout()
+        new_font = QFont('Helvetica', 12, QFont.Bold)
         
         #------------------------------------------------------------
         # select layout
         #------------------------------------------------------------
         
         #self.selectLayout = QtWidgets.QHBoxLayout()
+        
+        self.selectFileTitle = QtWidgets.QLabel('File Selection')
+        self.selectFileTitle.setFont(new_font)
         
         self.selectedFile = QtWidgets.QLineEdit()
         self.browseButton = QtWidgets.QPushButton('Browse')
@@ -95,29 +103,39 @@ class mainWindow(QtWidgets.QMainWindow):
         
         #self.selectLayout.addWidget(self.selectData)       
         self.selectLayout = QtWidgets.QVBoxLayout()
+        self.selectLayout.addWidget(self.selectFileTitle)
         self.selectLayout.addLayout(self.selectUpper)
         self.selectLayout.addLayout(self.selectLower)
         
         #------------------------------------------------------------
         # time layout
         #------------------------------------------------------------
+
+        self.timeLayout = QtWidgets.QGridLayout()
         
-        self.timeLayout = QtWidgets.QVBoxLayout()
+        self.timeTitle = QtWidgets.QLabel('Track Time Information')
+        self.timeTitle.setFont(new_font)
         
-        self.startInfo = QtWidgets.QLabel('Start: ----')
-        self.stopInfo = QtWidgets.QLabel('Stop: ----')
-        self.durationInfo = QtWidgets.QLabel('Duration: ----')
+        self.startLabel = QtWidgets.QLabel('Start:')
+        self.startInfo = QtWidgets.QLabel('----')
+        self.stopLabel = QtWidgets.QLabel('Stop:')
+        self.stopInfo = QtWidgets.QLabel('----')
+        self.durationLabel = QtWidgets.QLabel('Duration:')
+        self.durationInfo = QtWidgets.QLabel('----')
         
         self.changeTimeButton = QtWidgets.QPushButton('Change')
         self.changeTimeButton.setFixedWidth(100)
         self.changeTimeButton.clicked.connect(self.changeTime)
-        self.changeTimeButton.setEnabled(False)
+
         
-        
-        self.timeLayout.addWidget(self.startInfo)
-        self.timeLayout.addWidget(self.stopInfo)
-        self.timeLayout.addWidget(self.durationInfo)
-        self.timeLayout.addWidget(self.changeTimeButton)
+        self.timeLayout.addWidget(self.timeTitle, 0, 0)
+        self.timeLayout.addWidget(self.startLabel, 1, 0)
+        self.timeLayout.addWidget(self.startInfo, 1, 1)
+        self.timeLayout.addWidget(self.stopLabel, 2, 0)
+        self.timeLayout.addWidget(self.stopInfo, 2, 1)
+        self.timeLayout.addWidget(self.durationLabel, 3, 0)
+        self.timeLayout.addWidget(self.durationInfo, 3, 1)
+        self.timeLayout.addWidget(self.changeTimeButton, 4, 2)
         
         
         #------------------------------------------------------------
@@ -125,6 +143,10 @@ class mainWindow(QtWidgets.QMainWindow):
         #------------------------------------------------------------
         
         self.spaceLayout = QtWidgets.QGridLayout()
+        
+        self.spaceTitle = QtWidgets.QLabel('World boundaries')
+        self.spaceTitle.setFont(new_font)
+        self.spaceLayout.addWidget(self.spaceTitle, 0, 0)
         
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
 
@@ -134,21 +156,24 @@ class mainWindow(QtWidgets.QMainWindow):
             border = QtWidgets.QLabel( b + ':')
             border_size = QtWidgets.QLabel('----')
             border_size.setObjectName(b)
-            self.spaceLayout.addWidget(border, np.floor(j /2.), (j%2)*2)
-            self.spaceLayout.addWidget(border_size, np.floor(j /2.), (j%2)*2+1)
+            self.spaceLayout.addWidget(border, np.floor(j /2.)+1, (j%2)*2)
+            self.spaceLayout.addWidget(border_size, np.floor(j /2.)+1, (j%2)*2+1)
             self.Border_sizes[b] = border_size
             
         self.changeCoordsButton = QtWidgets.QPushButton('Change')
-        self.changeCoordsButton.setFixedWidth(100)
-        self.changeCoordsButton.setEnabled(False)
         self.changeCoordsButton.clicked.connect(self.changeCoords)
 
-        self.spaceLayout.addWidget(self.changeCoordsButton)
+        self.spaceLayout.addWidget(self.changeCoordsButton, np.ceil(len(borders)), 4)
+        
         
         #------------------------------------------------------------
         # smooth layout
         #------------------------------------------------------------
         self.smoothLayout = QtWidgets.QHBoxLayout()
+        
+        self.smoothTitle = QtWidgets.QLabel('Filtering and Smoothing')
+        self.smoothTitle.setFont(new_font)
+        
 
         self.selectSmoothing = QtWidgets.QComboBox()
         for s in self.SMOOTHING:    
@@ -157,6 +182,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.smoothButton =QtWidgets.QPushButton('Apply Smoothing')
         self.smoothButton.clicked.connect(self.apply_smoothing)
         
+        self.smoothLayout.addWidget(self.smoothTitle)
         self.smoothLayout.addWidget(self.selectSmoothing)
         self.smoothLayout.addWidget(self.smoothButton)
         
@@ -180,6 +206,7 @@ class mainWindow(QtWidgets.QMainWindow):
         # general layout
         #------------------------------------------------------------
        
+        self.mainLayout.setContentsMargins(20, 20, 20, 20)
         self.mainLayout.addLayout(self.selectLayout)
         self.mainLayout.addWidget(self.HLine())
         self.mainLayout.addLayout(self.timeLayout)
@@ -256,25 +283,25 @@ class mainWindow(QtWidgets.QMainWindow):
         self.INFO['y_max'] = max(max(df[an + '_y'].values)for an in self.INFO['agent_names'])
         
         self.update_labels()
+        self.DataLoaded = True
 
         
     def update_labels(self): 
         ''' Updates the labels displayed in mainWindow (start/stop/duration time, x/y - min/max). Gets called by timeWindow
         and the changeCoords function as well as when initializing the disply after loading a new dataset'''
         
-        self.startInfo.setText('Start: ' + str(self.INFO['start_time']) + '\t (' + str(self.INFO['start_frame']) + ')')
-        self.stopInfo.setText('Stop: '+ str(self.INFO['stop_time']) + '\t (' + str(self.INFO['stop_frame']) + ')')
+        self.startInfo.setText(str(self.INFO['start_time']) + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ')')
+        self.stopInfo.setText(str(self.INFO['stop_time']) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ')')
         if self.INFO['info']['time'] in ['s', 'ms']: 
             dur = np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2)
         elif self.INFO['info']['time'] == 'dt': 
             dur = self.INFO['stop_time'] - self.INFO['start_time']
             
-        self.durationInfo.setText('Duration: ' + str(dur) + '\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
+        self.durationInfo.setText(str(dur) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
         
         for key in self.Border_sizes: 
             self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
-        self.changeCoordsButton.setEnabled(True)
-        self.changeTimeButton.setEnabled(True)
+
         
 
         
@@ -282,7 +309,10 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' when the 'Change'Button is clicked on the time Layout, this function opens a 
         window with sliders to set start and stop time. The selected values are passed back 
         to mainWindows INFO dictionary'''
-    
+        
+        if self.DataLoaded == False: 
+            raise Warning('No File loaded')
+        
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         df = pd.read_csv(self.TMP_FILE, header = 0, sep = delim)
@@ -296,6 +326,9 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' when the 'Change'Button is clicked on the space Layout, this function changes the labels for x and y borders 
         to Line edits where individula changes can be made. The label of the 'Change' Button is set to ok and when presed, the 
         line edits are switched back to labels and the selected coordinate values are save d to the INFO dictionary.'''
+        
+        if self.DataLoaded == False: 
+            raise Warning('No File loaded')
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
         for key in self.Border_sizes: 
@@ -334,6 +367,9 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' When the 'Plot' Button is clicked this function uses the settings for time and space borders and the tmp file 
         created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
         
+        if self.DataLoaded == False: 
+            raise Warning('No File loaded')
+       
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         
@@ -359,6 +395,9 @@ class mainWindow(QtWidgets.QMainWindow):
             Then a File selection dialog is opened and at the chosen location a folder is created where the results are saved. 
             Finally a 'goodbye' dialog is sent informing the user where results were saved and asking wheter they want to 
             continue or close the application'''
+        
+        if self.DataLoaded == False: 
+            raise Warning('No File loaded')
         
         df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, 
                                                           self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
@@ -498,7 +537,7 @@ if __name__ == "__main__":
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
-    app.setApplicationName('main')
+    app.setApplicationName('BioTrackerAnalysis')
 
     main = mainWindow()
     main.show()
