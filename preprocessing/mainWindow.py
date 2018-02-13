@@ -6,6 +6,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 from PyQt5.QtGui import QFont   
 
+from PyQt5.QtCore import Qt
+
 import os
 import pandas as pd
 import numpy as np
@@ -50,14 +52,14 @@ class mainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
-        self.setFixedSize(600,500)
+        self.setFixedSize(620,500)
         self.home()
 
     def home(self): 
 
 
         self.mainLayout = QtWidgets.QVBoxLayout()
-        new_font = QFont('Helvetica', 12, QFont.Bold)
+        self.titleFont = QFont('Helvetica', 12, QFont.Bold)
         
         #------------------------------------------------------------
         # select layout
@@ -66,7 +68,7 @@ class mainWindow(QtWidgets.QMainWindow):
         #self.selectLayout = QtWidgets.QHBoxLayout()
         
         self.selectFileTitle = QtWidgets.QLabel('File Selection')
-        self.selectFileTitle.setFont(new_font)
+        self.selectFileTitle.setFont(self.titleFont)
         
         self.selectedFile = QtWidgets.QLineEdit()
         self.browseButton = QtWidgets.QPushButton('Browse')
@@ -114,7 +116,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.timeLayout = QtWidgets.QGridLayout()
         
         self.timeTitle = QtWidgets.QLabel('Track Time Information')
-        self.timeTitle.setFont(new_font)
+        self.timeTitle.setFont(self.titleFont)
         
         self.startLabel = QtWidgets.QLabel('Start:')
         self.startInfo = QtWidgets.QLabel('----')
@@ -124,8 +126,8 @@ class mainWindow(QtWidgets.QMainWindow):
         self.durationInfo = QtWidgets.QLabel('----')
         
         self.changeTimeButton = QtWidgets.QPushButton('Change')
-        self.changeTimeButton.setFixedWidth(100)
         self.changeTimeButton.clicked.connect(self.changeTime)
+        #self.changeTimeButton.resize(30, 30)
 
         
         self.timeLayout.addWidget(self.timeTitle, 0, 0)
@@ -135,7 +137,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.timeLayout.addWidget(self.stopInfo, 2, 1)
         self.timeLayout.addWidget(self.durationLabel, 3, 0)
         self.timeLayout.addWidget(self.durationInfo, 3, 1)
-        self.timeLayout.addWidget(self.changeTimeButton, 4, 2)
+        self.timeLayout.addWidget(self.changeTimeButton, 5, 2)
         
         
         #------------------------------------------------------------
@@ -145,7 +147,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.spaceLayout = QtWidgets.QGridLayout()
         
         self.spaceTitle = QtWidgets.QLabel('World boundaries')
-        self.spaceTitle.setFont(new_font)
+        self.spaceTitle.setFont(self.titleFont)
         self.spaceLayout.addWidget(self.spaceTitle, 0, 0)
         
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
@@ -172,7 +174,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.smoothLayout = QtWidgets.QHBoxLayout()
         
         self.smoothTitle = QtWidgets.QLabel('Filtering and Smoothing')
-        self.smoothTitle.setFont(new_font)
+        self.smoothTitle.setFont(self.titleFont)
         
 
         self.selectSmoothing = QtWidgets.QComboBox()
@@ -192,6 +194,9 @@ class mainWindow(QtWidgets.QMainWindow):
         # final layout
         #------------------------------------------------------------
         self.finalLayout = QtWidgets.QVBoxLayout()
+        
+        self.finalTitle = QtWidgets.QLabel('Finalize')
+        self.finalTitle.setFont(self.titleFont)
   
         self.plotButton = QtWidgets.QPushButton('Plot')
         self.plotButton.clicked.connect(self.plot_trajectory)
@@ -199,6 +204,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.saveButton = QtWidgets.QPushButton('Stats and save')
         self.saveButton.clicked.connect(self.stats_and_save)
         
+        self.finalLayout.addWidget(self.finalTitle)
         self.finalLayout.addWidget(self.plotButton)
         self.finalLayout.addWidget(self.saveButton)
         
@@ -290,14 +296,22 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' Updates the labels displayed in mainWindow (start/stop/duration time, x/y - min/max). Gets called by timeWindow
         and the changeCoords function as well as when initializing the disply after loading a new dataset'''
         
-        self.startInfo.setText(str(self.INFO['start_time']) + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ')')
-        self.stopInfo.setText(str(self.INFO['stop_time']) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ')')
+        #self.startInfo.setText(str(self.INFO['start_time']) + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ')')
+        #self.stopInfo.setText(str(self.INFO['stop_time']) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ')')
+        
         if self.INFO['info']['time'] in ['s', 'ms']: 
-            dur = np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2)
-        elif self.INFO['info']['time'] == 'dt': 
-            dur = self.INFO['stop_time'] - self.INFO['start_time']
+            dur = str(np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2))
+            start = str(np.round(self.INFO['start_time'], 2))
+            stop = str(np.round(self.INFO['stop_time'], 2))
             
-        self.durationInfo.setText(str(dur) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ')')
+        elif self.INFO['info']['time'] == 'dt': 
+            dur = str(self.INFO['stop_time'] - self.INFO['start_time'])
+            start = str(self.INFO['start_time'])
+            stop = str(self.INFO['stop_time'])
+            
+        self.startInfo.setText(start + ' ' + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ' frames)')
+        self.stopInfo.setText(stop + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ' frames)')
+        self.durationInfo.setText(dur + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ' frames)')
         
         for key in self.Border_sizes: 
             self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
@@ -442,6 +456,9 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' If a filter is selected in the dropdown menu and the 'Apply Smoothing' button is pressed, the respective 
         smoothing function is applied on the whole trajectory (not only the selected parts). '''
         
+        if self.DataLoaded == False: 
+            raise Warning('No File loaded')
+        
         smooth = str(self.selectSmoothing.currentText())
         if smooth == None: 
             pass
@@ -454,8 +471,9 @@ class mainWindow(QtWidgets.QMainWindow):
                 for an in self.INFO['agent_names']:
                     df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
                     df[an + '_y'] = smoothing.medfilt(df[an + '_y'].values)
-                    self.send_info('Trajectory is now smooth !')
-                    self.INFO['filtered'] = True
+
+                self.send_info('Trajectory is now smooth !')
+                self.INFO['filtered'] = True
                     
                     
     def send_info(self, text): 
