@@ -13,14 +13,13 @@ from numpy import random
 import sys
 from agentWindow import agentWindow
 from settingsWindow import settingsWindow
-#import settings.default_params as default
+
 import json
 
 
 class PandasModel(QtCore.QAbstractTableModel):
-    """
-    Class to populate a table view with a pandas dataframe
-    """
+    """ Class to populate a table view with a pandas dataframe """
+    
     def __init__(self, data, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent)
         self._data = data
@@ -45,10 +44,7 @@ class PandasModel(QtCore.QAbstractTableModel):
 
 class tableWindow(QtWidgets.QWidget):
     ''' presents a selected .csv file, allows to identify and name relevant columns. The resulting 
-    columns (with respective names) will be saved as 'tmp.csv' to be further processed by main window'''
-
-    #the name of the resulting file will be passed back to the main window            
-    #TMP_FILE_TITLE = default.tmp_file
+    columns (with respective names) will be saved as 'tmp.csv' to be further processed by mainWindow'''
 
 
     def __init__(self, parentWindow, fileName):
@@ -72,30 +68,11 @@ class tableWindow(QtWidgets.QWidget):
         
     def home(self): 
     
-        csv_dict = json.load(open(self.CSV_INFO_FILE))
-
-        try: 
-            delim = csv_dict['read']['delim']
-            skip_rows = csv_dict['read']['skip_rows']
-            comment = csv_dict['read']['comment']
-            df = pd.read_csv(self.fileName, sep = delim, comment = comment, skiprows = skip_rows)
-            vals = df.count(axis = 1).values # number of non-NaN values per row
-            maxx = df.count(axis = 1).max() # maximum number of non-NaN values per row
-            delete_rows = len(np.where(vals < maxx)[0])
-            self.send_info('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), detail = 'Indices of ignored rows: {}'.format(np.where(vals < maxx)[0]))
-            df = df.dropna(how = 'any')
-            
-        except pd.errors.ParserError: 
-            self.send_warning("There seems to be a problem with the file you're trying to open.\n\nThis is usually due to missing values. Please delete incomplete rows and try again.")
-            self.close()
-            
-        print(df.columns)
-        
+        df = self.open_data()
         
         self.nColumns = len(df.columns)
         self.model = PandasModel(df)
-        
-        
+
         self.tableView = QtWidgets.QTableView(self)
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setStretchLastSection(True)
@@ -421,6 +398,33 @@ class tableWindow(QtWidgets.QWidget):
                 key = self.AGENT_NAMES[k]+self.AGENT_DATA[j]    
                 self.checkLabels['AGENTS'][key] = param_dict[key]
         print(self.checkLabels)
+
+
+    def open_data(self):
+        ''' uses the parameters from self.CSV_INFO_FILE and tries to open the datafile with pandas. If NaN values are 
+            detected, the user is informed and the corresponding rows will be ignored in processing. If an error occurs 
+            while opening with pandas a warning is sent'''
+        
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        
+        try: 
+            delim = csv_dict['read']['delim']
+            skip_rows = csv_dict['read']['skip_rows']
+            comment = csv_dict['read']['comment']
+            df = pd.read_csv(self.fileName, sep = delim, comment = comment, skiprows = skip_rows)
+            vals = df.count(axis = 1).values # number of non-NaN values per row
+            maxx = df.count(axis = 1).max() # maximum number of non-NaN values per row
+            delete_rows = len(np.where(vals < maxx)[0])
+            self.send_info('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), 
+            detail = 'Indices of ignored rows: {}'.format(np.where(vals < maxx)[0]))
+            df = df.dropna(how = 'any')
+
+        except pd.errors.ParserError: 
+            self.send_warning("There seems to be a problem with the file you're trying to open.\n\n \
+            This is usually due to missing values. Please delete incomplete rows and try again.")
+            self.close()
+
+        return df
     
 
     def send_warning(self, text): 
