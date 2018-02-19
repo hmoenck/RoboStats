@@ -5,7 +5,6 @@
 from PyQt5 import QtWidgets 
 from PyQt5 import QtGui
 from PyQt5.QtGui import QFont   
-
 from PyQt5.QtCore import Qt
 
 import os
@@ -21,6 +20,12 @@ import data_processing.basic_stats as basic_stats
 import settings.data_settings as ds
 import data_processing.generate_stats_file as genStats
 import json
+
+import matplotlib 
+matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
+import plot_functions as pf
+
 
 
 class mainWindow(QtWidgets.QMainWindow):
@@ -50,7 +55,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
-        self.setFixedSize(620,500)
+        self.setFixedSize(650,600)
         self.home()
 
     def home(self): 
@@ -58,6 +63,8 @@ class mainWindow(QtWidgets.QMainWindow):
 
         self.mainLayout = QtWidgets.QVBoxLayout()
         self.titleFont = QFont('Helvetica', 12, QFont.Bold)
+        self.normalFont = QFont('Courier', 11)
+        #self.normalFont.setItalic(True)
         
         #------------------------------------------------------------
         # select layout
@@ -71,12 +78,16 @@ class mainWindow(QtWidgets.QMainWindow):
         self.selectedFile = QtWidgets.QLineEdit()
         self.browseButton = QtWidgets.QPushButton('Browse')
         self.browseButton.clicked.connect(self.on_browse_clicked)
+        self.browseButton.setToolTip('Click to select a file for analyis')  
         
         self.delimLabel = QtWidgets.QLabel('File deliminator')
         self.setDelim = QtWidgets.QLineEdit()
+        self.setDelim.setToolTip('Deliminator of the datafile to be analyzed')
+        
         self.skipRowsLabel = QtWidgets.QLabel('Skip rows')
         self.setSkipRows = QtWidgets.QLineEdit()
         self.setSkipRows.setValidator(QtGui.QIntValidator())
+        self.setSkipRows.setToolTip('First n rows of selected file will be skipped')
         self.init_browse_info()
         
         self.openInView = QtWidgets.QCheckBox('view')
@@ -85,6 +96,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         self.loadButton = QtWidgets.QPushButton('Load')
         self.loadButton.clicked.connect(self.on_load_clicked)
+        self.loadButton.setToolTip("Loads selcted File into TableView mode (if 'view' is checked). \nIf 'view is unchecked, the settings of previous analysis will be used.\nThis may cause errors.")
         
         
         self.selectUpper = QtWidgets.QHBoxLayout()
@@ -125,6 +137,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         self.changeTimeButton = QtWidgets.QPushButton('Change')
         self.changeTimeButton.clicked.connect(self.changeTime)
+        self.changeTimeButton.setToolTip('Click to change start / stop time of analysis.\nTo change time format please reload the file')
         #self.changeTimeButton.resize(30, 30)
 
         
@@ -162,6 +175,7 @@ class mainWindow(QtWidgets.QMainWindow):
             
         self.changeCoordsButton = QtWidgets.QPushButton('Change')
         self.changeCoordsButton.clicked.connect(self.changeCoords)
+        self.changeCoordsButton.setToolTip('Click to change borders of the analyzed region')
 
         self.spaceLayout.addWidget(self.changeCoordsButton, np.ceil(len(borders)), 4)
         
@@ -240,6 +254,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
+        self.home.setFont(self.normalFont)
         self.setCentralWidget(self.home)
 
     
@@ -267,6 +282,10 @@ class mainWindow(QtWidgets.QMainWindow):
     def on_load_clicked(self):
         ''' When the 'Load' Button is clicked, this function passes the filkename to tableWindow. csv parameters are read in from 
         the respective line edits, and saved to json for further use'''
+        if self.DataLoaded == False: 
+            self.send_warning('No File loaded')
+            return
+            
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         csv_dict['read']['delim'] = self.setDelim.text()
         csv_dict['read']['skip_rows'] = int(self.setSkipRows.text())
@@ -339,7 +358,9 @@ class mainWindow(QtWidgets.QMainWindow):
         to mainWindows INFO dictionary'''
         
         if self.DataLoaded == False: 
-            raise Warning('No File loaded')
+            self.send_warning('No File loaded')
+            return
+            #raise Warning('No File loaded')
         
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
@@ -356,7 +377,9 @@ class mainWindow(QtWidgets.QMainWindow):
         line edits are switched back to labels and the selected coordinate values are save d to the INFO dictionary.'''
         
         if self.DataLoaded == False: 
-            raise Warning('No File loaded')
+            self.send_warning('No File loaded')
+            return
+            #raise Warning('No File loaded')
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
         for key in self.Border_sizes: 
@@ -372,7 +395,7 @@ class mainWindow(QtWidgets.QMainWindow):
                 le = QtWidgets.QLineEdit(str(self.INFO[b]))
                 le.setValidator(QtGui.QDoubleValidator())
                 self.Border_sizes[b] = le
-                self.spaceLayout.addWidget(le, np.floor(i /2.), (i%2)*2+1)
+                self.spaceLayout.addWidget(le, np.floor(i /2.) +1, (i%2)*2+1)
             self.changeCoordsButton.setText('Ok')
             
         elif self.changeCoordsButton.text() == 'Ok':
@@ -380,9 +403,9 @@ class mainWindow(QtWidgets.QMainWindow):
             for i, b in enumerate(borders): 
                 l = QtWidgets.QLabel(str(self.INFO[b]))
                 self.Border_sizes[b] = l
-                self.spaceLayout.addWidget(l, np.floor(i /2.), (i%2)*2+1)
+                self.spaceLayout.addWidget(l, np.floor(i /2.) +1, (i%2)*2+1)
             self.changeCoordsButton.setText('Change')
-        print(self.INFO)
+
 
     def update_dicts(self, dict1, dict2): 
         ''' updates the values of one dictionary with the values of another, gets called by tableWindow'''
@@ -396,7 +419,9 @@ class mainWindow(QtWidgets.QMainWindow):
         created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
         
         if self.DataLoaded == False: 
-            raise Warning('No File loaded')
+            self.send_warning('No File loaded')
+            return
+            #raise Warning('No File loaded')
        
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
@@ -425,7 +450,9 @@ class mainWindow(QtWidgets.QMainWindow):
             continue or close the application'''
         print(self.selectStats.currentText())
         if self.DataLoaded == False: 
-            raise Warning('No File loaded')
+            self.send_warning('No File loaded')
+            return
+            #raise Warning('No File loaded')
             
             
         selected_stats = self.selectStats.currentText()
@@ -470,7 +497,14 @@ class mainWindow(QtWidgets.QMainWindow):
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
             genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
             
-            print(str(results_folder))
+            
+            #plt.plot(np.arange(0, 10, .1), np.sin(np.arange(0, 10, .1)))
+            #for an in self.INFO['agent_names']: 
+            #    plt.plot(df['seconds'].values, df[an + '_speed'].values)
+            #plt.savefig(results_folder + '/speeds.jpg')
+            #print(str(results_folder))
+            pf.plot_things(results_folder)
+            
             self.send_goodbye(results_folder)
 
         
