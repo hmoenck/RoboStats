@@ -282,7 +282,8 @@ class mainWindow(QtWidgets.QMainWindow):
     def on_load_clicked(self):
         ''' When the 'Load' Button is clicked, this function passes the filkename to tableWindow. csv parameters are read in from 
         the respective line edits, and saved to json for further use'''
-        if self.DataLoaded == False: 
+        
+        if self.INFO['data_file'] == None: 
             self.send_warning('No File loaded')
             return
             
@@ -452,12 +453,8 @@ class mainWindow(QtWidgets.QMainWindow):
         if self.DataLoaded == False: 
             self.send_warning('No File loaded')
             return
-            #raise Warning('No File loaded')
-            
-            
+           
         selected_stats = self.selectStats.currentText()
-        
-        
         
         if selected_stats == 'Fancy': 
             self.send_info("Sorry, I can't do anything fancy yet")
@@ -496,14 +493,8 @@ class mainWindow(QtWidgets.QMainWindow):
             delim = csv_dict['write']['delim']
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
             genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
-            
-            
-            #plt.plot(np.arange(0, 10, .1), np.sin(np.arange(0, 10, .1)))
-            #for an in self.INFO['agent_names']: 
-            #    plt.plot(df['seconds'].values, df[an + '_speed'].values)
-            #plt.savefig(results_folder + '/speeds.jpg')
-            #print(str(results_folder))
-            pf.plot_things(results_folder)
+
+            pf.plot_things(df, results_folder, self.INFO['agent_names'])
             
             self.send_goodbye(results_folder)
 
