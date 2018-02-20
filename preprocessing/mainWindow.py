@@ -204,16 +204,42 @@ class mainWindow(QtWidgets.QMainWindow):
         #------------------------------------------------------------
         # plot layout
         #------------------------------------------------------------
-        self.plotLayout = QtWidgets.QVBoxLayout()
+#        self.plotLayout = QtWidgets.QVBoxLayout()
+#        
+#        self.plotTitle = QtWidgets.QLabel('Generate Plots')
+#        self.plotTitle.setFont(self.titleFont)
+#        
+#        self.plotButton = QtWidgets.QPushButton('Plot')
+#        self.plotButton.clicked.connect(self.plot_trajectory)
+#        
+#        self.plotLayout.addWidget(self.plotTitle)
+#        self.plotLayout.addWidget(self.plotButton)
+
+        self.plotLayout = QtWidgets.QGridLayout()
+        self.TYPES = ['Select', 'Trajectory', 'Timeline', 'Histogramm', 'Boxplot']
+        self.SPECS = {'Select': ['-------'], 'Trajectory': ['one agent', 'two agents'], 'Timeline': ['Speed', 'Distance'], 
+    'Histogramm': ['Speed', 'Distance'] , 'Boxplot': ['Speed', 'Distance']}
         
-        self.plotTitle = QtWidgets.QLabel('Generate Plots')
+        self.plotTitle = QtWidgets.QLabel('Inspect Data')
         self.plotTitle.setFont(self.titleFont)
         
-        self.plotButton = QtWidgets.QPushButton('Plot')
-        self.plotButton.clicked.connect(self.plot_trajectory)
+        self.selectType = QtWidgets.QComboBox(self)
+        for t in self.TYPES: 
+            self.selectType.addItem(t)
+        self.selectType.currentIndexChanged.connect(self.setSelectSpec)
         
-        self.plotLayout.addWidget(self.plotTitle)
-        self.plotLayout.addWidget(self.plotButton)
+        self.selectSpec = QtWidgets.QComboBox(self)
+        for t in self.SPECS['Select']: 
+            self.selectSpec.addItem(t)
+        
+        self.inspectButton = QtWidgets.QPushButton('Inspect')
+        self.inspectButton.clicked.connect(self.on_pushed_inspect)
+        
+        self.plotLayout.addWidget(self.plotTitle, 0, 0)
+        self.plotLayout.addWidget(self.selectType, 1, 0)
+        self.plotLayout.addWidget(self.selectSpec, 1, 1)
+        self.plotLayout.addWidget(self.inspectButton, 1, 2)
+        
         #------------------------------------------------------------
         # final layout
         #------------------------------------------------------------
@@ -307,6 +333,10 @@ class mainWindow(QtWidgets.QMainWindow):
         df = pd.read_csv(tmp_file, header = 0, sep = delim)
         
         time_format = self.INFO['info']['time']
+        if ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE) == None: 
+            self.send_warning('Time format invalid!')
+            return False
+            
         self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
         self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
         
@@ -415,32 +445,83 @@ class mainWindow(QtWidgets.QMainWindow):
              dict1[key] = dict2[key]
              
              
-    def plot_trajectory(self): 
-        ''' When the 'Plot' Button is clicked this function uses the settings for time and space borders and the tmp file 
-        created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
-        
-        if self.DataLoaded == False: 
-            self.send_warning('No File loaded')
+#    def plot_trajectory(self): 
+#        ''' When the 'Plot' Button is clicked this function uses the settings for time and space borders and the tmp file 
+#        created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
+#        
+#        if self.DataLoaded == False: 
+#            self.send_warning('No File loaded')
+#            return
+#            #raise Warning('No File loaded')
+#       
+#        csv_dict = json.load(open(self.CSV_INFO_FILE))
+#        delim = csv_dict['write']['delim']
+#        
+#        r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
+#        df = pd.read_csv(self.TMP_FILE, sep = delim)
+#        print(df.columns)
+#                
+#        d = {}
+#        start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
+#        stop_idx = np.where(df['frames'].values == self.INFO['stop_frame'])[0][0]
+#        
+#        for an in self.INFO['agent_names']:
+#            d[an] = (df[an + '_x'].values[start_idx:stop_idx], df[an + '_y'].values[start_idx:stop_idx])
+#        
+#        
+#        self.trajectoryWindow = plotWindow(d, r)
+#        self.trajectoryWindow.exec_()
+    
+    def setSelectSpec(self, index): 
+        ''' Updates the second dropdown menu in the inspect layout accourding to the value of the first'''
+        self.selectSpec.clear()
+        data = str(self.selectType.currentText())
+        self.selectSpec.addItems(self.SPECS[data])   
+    
+    def on_pushed_inspect(self): 
+        df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)  
+
+        representation = str(self.selectType.currentText())
+        datatype = str(self.selectSpec.currentText())
+        if representation == 'Trajectory': 
+            data2plot = {an : np.vstack((df[an +'_x'], df[an +'_y'])) for an in self.INFO['agent_names']}
+            self.pW = plotWindow(data2plot, representation, datatype)
+            self.pW.exec_()
+            
+        elif representation == 'Timeline': 
+            if datatype == 'Speed': 
+                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
+                data2plot['time'] = df['seconds']
+            elif datatype == 'Distance': 
+                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
+                data2plot = {c : df[c] for c in dist_cols}
+                data2plot['time'] = df['seconds']
+            self.pW = plotWindow(data2plot, representation, datatype)
+            self.pW.exec_()
+            
+        elif representation == 'Histogramm': 
+            if datatype == 'Speed': 
+                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
+            elif datatype == 'Distance': 
+                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
+                data2plot = {c : df[c] for c in dist_cols}
+            self.pW = plotWindow(data2plot, representation, datatype)
+            self.pW.exec_()
+
+        elif representation == 'Boxplot': 
+            if datatype == 'Speed': 
+                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
+            elif datatype == 'Distance': 
+                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
+                data2plot = {c : df[c] for c in dist_cols}
+            self.pW = plotWindow(data2plot, representation, datatype)
+            self.pW.exec_()
+        else: 
+            self.send_warning('selection invalid')
             return
-            #raise Warning('No File loaded')
-       
-        csv_dict = json.load(open(self.CSV_INFO_FILE))
-        delim = csv_dict['write']['delim']
-        
-        r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
-        df = pd.read_csv(self.TMP_FILE, sep = delim)
-        print(df.columns)
-                
-        d = {}
-        start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
-        stop_idx = np.where(df['frames'].values == self.INFO['stop_frame'])[0][0]
-        
-        for an in self.INFO['agent_names']:
-            d[an] = (df[an + '_x'].values[start_idx:stop_idx], df[an + '_y'].values[start_idx:stop_idx])
-        
-        
-        self.trajectoryWindow = plotWindow(d, r)
-        self.trajectoryWindow.exec_()
+
+
+
 
         
     def stats_and_save(self): 
@@ -449,7 +530,7 @@ class mainWindow(QtWidgets.QMainWindow):
             Then a File selection dialog is opened and at the chosen location a folder is created where the results are saved. 
             Finally a 'goodbye' dialog is sent informing the user where results were saved and asking wheter they want to 
             continue or close the application'''
-        print(self.selectStats.currentText())
+            
         if self.DataLoaded == False: 
             self.send_warning('No File loaded')
             return
@@ -458,12 +539,13 @@ class mainWindow(QtWidgets.QMainWindow):
         
         if selected_stats == 'Fancy': 
             self.send_info("Sorry, I can't do anything fancy yet")
-            pass
-        else: 
-            df, single_value_stats, indiv_stats, coll_stats = basic_stats.stats_and_save(self.TMP_FILE, 
-                                                              self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+            return
+        else:
+            df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)   
             
-            # order columns of df
+            indiv_stats = ['_vx', '_vy', '_speed']
+            coll_stats = ['_dist']
+            
             time = ['frames', 'time', 'seconds']
             agents = self.INFO['agent_names']
             specs = ['_x', '_y', '_angle']
@@ -492,9 +574,9 @@ class mainWindow(QtWidgets.QMainWindow):
             csv_dict = json.load(open(self.CSV_INFO_FILE))
             delim = csv_dict['write']['delim']
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
-            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, single_value_stats)
+            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
 
-            pf.plot_things(df, results_folder, self.INFO['agent_names'])
+            #pf.plot_things(df, results_folder, self.INFO['agent_names'])
             
             self.send_goodbye(results_folder)
 
