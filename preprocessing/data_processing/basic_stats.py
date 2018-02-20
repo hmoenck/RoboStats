@@ -8,46 +8,105 @@ from scipy.stats import mode
 
 # build dict with single value stats!
 
-def stats_and_save(filename, info, csv_info_file, param_info_file): 
-
+def speed_and_dist(filename, info, csv_info_file, param_info_file): 
+    '''This function gets called by the ok button in tableWindow. It calculates seconds from the chosen 
+    time format, velocity and speed of each agent and the distance between agent pairs. The results 
+    are saved in a temporary file. '''
+    
+    # what to calculate 
     INDIVIDUAL_STATS = ['_vx', '_vy', '_speed']
     COLLECTIVE_STATS = ['_dist']
-    SINGLE_VALUE_STATS = {'order':[]}
     
+    # deliminater for the resulting csv
     csv_info = json.load(open(csv_info_file))
     delim = csv_info['write']['delim']
     
+    # get the time format
     data_info = json.load(open(param_info_file))
     time_format = data_info['info']['time']
-
+    
+    #read csv to pandas
     df = pd.read_csv(filename, header = 0, sep = delim)
     df_new = df
     
-    print(df['time'].values)
-    # add an additional column in seconds starting from 0
+    # use the timeformat of the data to create a column called 'seconds'
     seconds, DT, FPS = get_seconds_from_time(df['time'].values, time_format)
     df_new['seconds'] = seconds
-
+    
+    # calculate speed and velocity
     for i, an in enumerate(info['agent_names']): 
         df_new[an + '_vx'] = velocity(df[an + '_x'].values, DT)
         df_new[an + '_vy'] = velocity(df[an + '_y'].values, DT)
         df_new[an + '_speed'] = speed(df_new[an + '_vx'].values, df_new[an + '_vy'].values)
-        
+    
+    # calculate distance between agent pairs
         for j, bn in enumerate(info['agent_names']): 
             if j >= i+1: 
                 df_new[an + '/' + bn + '_dist'] = distance(df[an+'_x'].values, df[an+'_y'].values, df[bn+'_x'].values, df[bn+'_y'].values)
-        
-        SINGLE_VALUE_STATS['order'].append(an + '_trajectory_legth')
-        SINGLE_VALUE_STATS[an + 'tl'] = trajectory_length(df_new[an +'_speed'].values, DT)  
-    # slice in time 
+    
+    # save dataframe  
+    df_new.to_csv(filename, sep = delim)
+
+
+def cut_timelines(filename, info, csv_info_file):  
+
+    csv_info = json.load(open(csv_info_file))
+    delim = csv_info['write']['delim']
+    
+    df = pd.read_csv(filename, header = 0, sep = delim)
+    df_new = df
+    
     idx_min = np.where(df['frames'].values == info['start_frame'])[0][0]
     idx_max = np.where(df['frames'].values == info['stop_frame'])[0][0]   
     df_new = time_slicer(df, idx_min, idx_max)
     
-    # slice in space 
     df_new = space_slicer(df_new, info['agent_names'], info['x_min'], info['x_max'], info['y_min'], info['y_max'])
+    
+    return df_new
 
-    return df_new, SINGLE_VALUE_STATS, INDIVIDUAL_STATS, COLLECTIVE_STATS
+
+
+#def stats_and_save(filename, info, csv_info_file, param_info_file): 
+#    pass
+#    INDIVIDUAL_STATS = ['_vx', '_vy', '_speed']
+#    COLLECTIVE_STATS = ['_dist']
+#    SINGLE_VALUE_STATS = {'order':[]}
+#    
+#    csv_info = json.load(open(csv_info_file))
+#    delim = csv_info['write']['delim']
+#    
+##    data_info = json.load(open(param_info_file))
+##    time_format = data_info['info']['time']
+
+#    df = pd.read_csv(filename, header = 0, sep = delim)
+#    df_new = df
+    
+    #print(df['time'].values)
+    # add an additional column in seconds starting from 0
+#    seconds, DT, FPS = get_seconds_from_time(df['time'].values, time_format)
+#    df_new['seconds'] = seconds
+
+#    for i, an in enumerate(info['agent_names']): 
+#        df_new[an + '_vx'] = velocity(df[an + '_x'].values, DT)
+#        df_new[an + '_vy'] = velocity(df[an + '_y'].values, DT)
+#        df_new[an + '_speed'] = speed(df_new[an + '_vx'].values, df_new[an + '_vy'].values)
+#        
+#        for j, bn in enumerate(info['agent_names']): 
+#            if j >= i+1: 
+#                df_new[an + '/' + bn + '_dist'] = distance(df[an+'_x'].values, df[an+'_y'].values, df[bn+'_x'].values, df[bn+'_y'].values)
+#        
+#    SINGLE_VALUE_STATS['order'].append(an + '_trajectory_legth')
+#    SINGLE_VALUE_STATS[an + 'tl'] = trajectory_length(df_new[an +'_speed'].values, DT)  
+#        
+#    # slice in time 
+#    idx_min = np.where(df['frames'].values == info['start_frame'])[0][0]
+#    idx_max = np.where(df['frames'].values == info['stop_frame'])[0][0]   
+#    df_new = time_slicer(df, idx_min, idx_max)
+#    
+#    # slice in space 
+#    df_new = space_slicer(df_new, info['agent_names'], info['x_min'], info['x_max'], info['y_min'], info['y_max'])
+
+#    return df_new, SINGLE_VALUE_STATS, INDIVIDUAL_STATS, COLLECTIVE_STATS
 
 
 def time_slicer(df, t_min, t_max): 
