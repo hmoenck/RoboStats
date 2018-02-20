@@ -1,18 +1,19 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys
-#from PyQt4 import QtGui, QtCore
-
 from PyQt5 import QtWidgets 
-#from PyQt5 import QtGui
+from PyQt5 import QtGui 
+import pandas as pd
+from numpy import random
+import numpy as np
+import sys
+import sip
 
 import matplotlib
 matplotlib.use('Qt5Agg')
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-#from matplotlib.figure import Figure
 
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
@@ -20,57 +21,90 @@ import matplotlib.patches as patches
 import seaborn as sns
 sns.set()
 
-import random
-import numpy as np
-
-
-
-
 
 class plotWindow(QtWidgets.QDialog):
-#TODO make more general
-    def __init__(self, data, rect, parent = None):
-        ''' 'data' is a dictionary and for every agent it contains an xy tuple, strt/stop time is 
-        according to the settings in main window. 
-        'rect' is a list contaiing lower left corner of the rectangle (as a tuple) and width and height paramters i.e. [(x,y), width,   height], this is in accordance with the arena settings from main window. '''
+
+    def __init__(self, data, plot_info1, plot_info2, parent = None):
+    
         super(plotWindow, self).__init__(parent)
              
-        self.rect = rect #format = [(x,y), width, height]
         self.data2plot = data
-        
-
+        self.plot_info1 = plot_info1
+        self.plot_info2 = plot_info2
+       
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self)
-
 
         # set the layout
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
-        ax = self.figure.add_subplot(111)
         
-        self.plot(ax)
+        print('Generating: ' + plot_info1 + ' ' + plot_info2)
+
+        
+        if plot_info1 == 'Trajectory':
+            self.plot_trajectory()
+            self.canvas.draw()
+        elif plot_info1 == 'Timeline':
+            self.plot_timeline()
+            self.canvas.draw()
+        if plot_info1 == 'Histogramm':
+            self.plot_histogramm()
+            self.canvas.draw()
+        elif plot_info1 == 'Boxplot':
+            self.plot_boxplot()
+            self.canvas.draw()
+
+
+
+    def plot_histogramm(self):
+        keys = list(self.data2plot.keys())
+        for i, key in enumerate(keys): 
+            ax = self.figure.add_subplot(len(keys), 1, i+1)
+            ax.hist(self.data2plot[key], 20) 
+            ax.set_title(key)
+            if i < len(keys) -1:
+                ax.xaxis.set_ticklabels([])
+            else: 
+                ax.set_xlabel(self.plot_info2 )
         self.canvas.draw()
 
-    def plot(self, ax):
-        ''' plot trajectory '''
-        #ax = self.figure.add_subplot(111)
+    def plot_timeline(self):
+        time = self.data2plot['time'] 
+        keys = list(self.data2plot.keys())
+        keys.remove('time')
+        for i, key in enumerate(keys): 
+            ax = self.figure.add_subplot(len(keys), 1, i+1)
+            ax.plot(time, self.data2plot[key]) 
+            ax.set_title(key)
+            ax.set_ylabel(self.plot_info2 )
+            if i < len(keys) -1:
+                ax.xaxis.set_ticklabels([])
+            else: 
+                ax.set_xlabel('time')
+            
+            self.canvas.draw()
 
-        # discards the old graph
-        ax.clear()
-
-        # plot data
-        for key in self.data2plot: 
-            ax.plot(self.data2plot[key][0], self.data2plot[key][1], label = key)
-       
-        ax.add_patch(patches.Rectangle(*self.rect, fill = False, linewidth = 5))
+    def plot_trajectory(self): 
+        keys = list(self.data2plot.keys())
+        ax = self.figure.add_subplot(111)
+        for i, key in enumerate(keys): 
+            
+            ax.plot(self.data2plot[key][0, :], self.data2plot[key][1, :]) 
+            ax.set_title('Trajectory')
+            ax.set_xlabel('x')
+            ax.set_xlabel('y')
+            
+            self.canvas.draw()
         
-        ax.legend()
-        #ax.savefig('fig.png')
-        #ax.xlim(self.rect[0][0]-5, self.rect[0][0] +self.rect[1] +5)
-        #ax.ylim(self.rect[0][1]-5, self.rect[0][1] +self.rect[2] +5)
-       
+    def plot_boxplot(self): 
+        keys = list(self.data2plot.keys())
+        ax = self.figure.add_subplot(111)
+        ax.boxplot([self.data2plot[key] for key in keys])
+        ax.xaxis.set_ticklabels(keys)
+        
         self.canvas.draw()
 
