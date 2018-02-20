@@ -13,6 +13,7 @@ from numpy import random
 import sys
 from agentWindow import agentWindow
 from settingsWindow import settingsWindow
+import data_processing.basic_stats as basic_stats
 
 import json
 
@@ -298,9 +299,10 @@ class tableWindow(QtWidgets.QWidget):
         if valid: 
             self.build_csv(self.fileName)
             self.parentWindow.INFO['info'] = self.PARAM_INFO
-            print('i just set this', self.parentWindow.INFO)
             self.parentWindow.INFO['agent_names'] = self.AGENT_NAMES
-            self.parentWindow.init_Info(self.TMP_FILE_TITLE)
+            if self.parentWindow.init_Info(self.TMP_FILE_TITLE) == False: 
+                return
+            basic_stats.speed_and_dist(self.TMP_FILE_TITLE, self.parentWindow.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
             self.home.close()
         else: 
             self.send_warning('Column selection invalid: Check for empty fields, double indices and indices exceeding size of original file')
@@ -330,7 +332,7 @@ class tableWindow(QtWidgets.QWidget):
         df_new = df_new.dropna(how = 'any')    
         
         print(header_dict)
-        print(df_new['frames'].values)
+
         if type(df_new['frames'].values[0]) == str: #drop original header
             df_new = df_new.drop(df.index[0])
         
@@ -422,6 +424,7 @@ class tableWindow(QtWidgets.QWidget):
         except pd.errors.ParserError: 
             self.send_warning("There seems to be a problem with the file you're trying to open.\n\n \
             This is usually due to missing values. Please delete incomplete rows and try again.")
+            return
             self.close()
 
         return df
