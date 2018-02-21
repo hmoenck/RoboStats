@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from numpy import random
 import numpy as np
 import json
-import settings.data_settings as ds
+import data_processing.time_parsers as tp
 
 
 
@@ -49,11 +49,13 @@ class timeWindow(QtWidgets.QWidget):
             
             # slider object
             slider =  QtWidgets.QSlider(Qt.Horizontal) #
-            slider.setObjectName(lab)            
+            slider.setObjectName(lab) 
+            slider.setRange(0, len(self.TIME)-1)            
             value = np.where(self.FRAMES == self.START_STOP[lab + '_frame'])[0][0]
+            print(value)
             slider.setValue(value)            
             slider.valueChanged.connect(self.set_time)
-            slider.setRange(0, len(self.TIME)-1) 
+            
             
             # line edit for time value
             time = QtWidgets.QLineEdit()
@@ -129,8 +131,8 @@ class timeWindow(QtWidgets.QWidget):
         
         # update parent window
         time_format = self.parentWindow.INFO['info']['time']
-        self.START_STOP['start_time'] = ds.handle_timestamp(self.START_STOP['start_time'], time_format, self.DATE_FORMATS_FILE)
-        self.START_STOP['stop_time'] = ds.handle_timestamp(self.START_STOP['stop_time'], time_format, self.DATE_FORMATS_FILE)
+        self.START_STOP['start_time'] = tp.handle_timestamp(self.START_STOP['start_time'], time_format, self.DATE_FORMATS_FILE)
+        self.START_STOP['stop_time'] = tp.handle_timestamp(self.START_STOP['stop_time'], time_format, self.DATE_FORMATS_FILE)
         self.parentWindow.update_dicts(self.parentWindow.INFO, self.START_STOP)
         self.parentWindow.update_labels()
         
