@@ -323,9 +323,12 @@ class mainWindow(QtWidgets.QMainWindow):
         if tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE) == None: 
             messages.send_warning('Time format invalid!')
             return False
-            
-        self.INFO['start_time'] = tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
-        self.INFO['stop_time'] = tp.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
+        
+        self.INFO['start_time'] = df['seconds'].values[0]    
+        self.INFO['stop_time'] = df['seconds'].values[-1]
+        
+#        self.INFO['start_time'] = tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
+#        self.INFO['stop_time'] = tp.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
         
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
@@ -347,19 +350,27 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' Updates the labels displayed in mainWindow (start/stop/duration time, x/y - min/max). Gets called by timeWindow
         and the changeCoords function as well as when initializing the disply after loading a new dataset'''
         
-        if self.INFO['info']['time'] in ['s', 'ms']: 
-            dur = str(np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2))
-            start = str(np.round(self.INFO['start_time'], 2))
-            stop = str(np.round(self.INFO['stop_time'], 2))
-            
-        elif self.INFO['info']['time'] == 'dt': 
-            dur = str(self.INFO['stop_time'] - self.INFO['start_time'])
-            start = str(self.INFO['start_time'])
-            stop = str(self.INFO['stop_time'])
-            
-        self.startInfo.setText(start + ' ' + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ' frames)')
-        self.stopInfo.setText(stop + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ' frames)')
-        self.durationInfo.setText(dur + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ' frames)')
+#        if self.INFO['info']['time'] in ['s', 'ms']: 
+#            dur = str(np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2))
+#            start = str(np.round(self.INFO['start_time'], 2))
+#            stop = str(np.round(self.INFO['stop_time'], 2))
+#            
+#        elif self.INFO['info']['time'] == 'dt': 
+#            dur = str(self.INFO['stop_time'] - self.INFO['start_time'])
+#            start = str(self.INFO['start_time'])
+#            stop = str(self.INFO['stop_time'])
+
+        dur = str(np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2))
+        start = str(np.round(self.INFO['start_time'], 2))
+        stop = str(np.round(self.INFO['stop_time'], 2))
+        
+        self.startInfo.setText(start + ' s \t (' + str(self.INFO['start_frame']) + ' frames)')
+        self.stopInfo.setText(stop + ' s \t (' + str(self.INFO['stop_frame']) + ' frames)')
+        self.durationInfo.setText(dur + ' s \t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ' frames)')
+
+#        self.startInfo.setText(start + ' ' + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ' frames)')
+#        self.stopInfo.setText(stop + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ' frames)')
+#        self.durationInfo.setText(dur + ' ' + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame'] - self.INFO['start_frame']) + ' frames)')
         
         for key in self.Border_sizes: 
             self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
@@ -377,7 +388,8 @@ class mainWindow(QtWidgets.QMainWindow):
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
         df = pd.read_csv(self.TMP_FILE, header = 0, sep = delim)
-        t = df['time'].values
+        #t = df['time'].values
+        t = df['seconds'].values
         f = df['frames'].values
         
         self.time = timeWindow(self, t, f, self.INFO)

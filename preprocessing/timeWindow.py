@@ -61,10 +61,12 @@ class timeWindow(QtWidgets.QWidget):
             time = QtWidgets.QLineEdit()
             time.setObjectName(lab + '_time')
             time.setReadOnly(True)
-            time.setText(str(self.START_STOP[lab +'_time']))
+            time.setText(str(np.round(self.START_STOP[lab +'_time'], 2)))
             
             # label for time value
             timelabel = QtWidgets.QLabel(self.time_format)
+            #timelabel = QtWidgets.QLabel('s')
+            
             
             # line edit for frame value
             frame = QtWidgets.QLineEdit()
