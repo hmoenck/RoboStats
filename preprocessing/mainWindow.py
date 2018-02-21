@@ -17,9 +17,11 @@ from timeWindow import timeWindow
 from plotWindow import plotWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
-import settings.data_settings as ds
+import data_processing.time_parsers as tp
 import data_processing.generate_stats_file as genStats
+import data_processing.generate_data2plot as genPlotData
 import json
+import messages 
 
 import matplotlib 
 matplotlib.use('Qt5Agg')
@@ -32,8 +34,6 @@ class mainWindow(QtWidgets.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
             'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
-            
-    TMP_FILE = 'tmp.csv' 
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
     STATS_OPTIONS = ['Simple', 'Fancy']
@@ -45,12 +45,16 @@ class mainWindow(QtWidgets.QMainWindow):
         CSV_INFO_FILE = 'settings/csv_info.json'
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
+        FILENAMES_INFO_FILE = 'settings/file_names.json'
     except FileNotFoundError:
         twoFoldersup =  os.path.dirname(os.path.dirname(os.getcwd()))
         CSV_INFO_FILE = twoFoldersup + 'settings/csv_info.json'
         PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
-
+        FILENAMES_INFO_FILE = twoFoldersup + 'settings/file_names.json'
+    
+    file_info = json.load(open(FILENAMES_INFO_FILE))
+    TMP_FILE = file_info['tmp_file']
     
 
     def __init__(self, parent = None):
@@ -64,13 +68,10 @@ class mainWindow(QtWidgets.QMainWindow):
         self.mainLayout = QtWidgets.QVBoxLayout()
         self.titleFont = QFont('Helvetica', 12, QFont.Bold)
         self.normalFont = QFont('Courier', 11)
-        #self.normalFont.setItalic(True)
         
         #------------------------------------------------------------
-        # select layout
+        # select layout: responsible for selcting and loading files
         #------------------------------------------------------------
-        
-        #self.selectLayout = QtWidgets.QHBoxLayout()
         
         self.selectFileTitle = QtWidgets.QLabel('File Selection')
         self.selectFileTitle.setFont(self.titleFont)
@@ -97,8 +98,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.loadButton = QtWidgets.QPushButton('Load')
         self.loadButton.clicked.connect(self.on_load_clicked)
         self.loadButton.setToolTip("Loads selcted File into TableView mode (if 'view' is checked). \nIf 'view is unchecked, the settings of previous analysis will be used.\nThis may cause errors.")
-        
-        
+                
         self.selectUpper = QtWidgets.QHBoxLayout()
         self.selectUpper.addWidget(self.selectedFile)
         self.selectUpper.addWidget(self.browseButton)
@@ -110,17 +110,14 @@ class mainWindow(QtWidgets.QMainWindow):
         self.selectLower.addWidget(self.setSkipRows)
         self.selectLower.addWidget(self.openInView)
         self.selectLower.addWidget(self.loadButton)
-        #self.selectData = QtWidgets.QPushButton('Set Data Columns')
-        #self.selectData.clicked.connect(self.on_Button_clicked)
         
-        #self.selectLayout.addWidget(self.selectData)       
         self.selectLayout = QtWidgets.QVBoxLayout()
         self.selectLayout.addWidget(self.selectFileTitle)
         self.selectLayout.addLayout(self.selectUpper)
         self.selectLayout.addLayout(self.selectLower)
         
         #------------------------------------------------------------
-        # time layout
+        # time layout: responsible for setting start and stop time
         #------------------------------------------------------------
 
         self.timeLayout = QtWidgets.QGridLayout()
@@ -138,8 +135,6 @@ class mainWindow(QtWidgets.QMainWindow):
         self.changeTimeButton = QtWidgets.QPushButton('Change')
         self.changeTimeButton.clicked.connect(self.changeTime)
         self.changeTimeButton.setToolTip('Click to change start / stop time of analysis.\nTo change time format please reload the file')
-        #self.changeTimeButton.resize(30, 30)
-
         
         self.timeLayout.addWidget(self.timeTitle, 0, 0)
         self.timeLayout.addWidget(self.startLabel, 1, 0)
@@ -152,7 +147,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         
         #------------------------------------------------------------
-        # space layout
+        # space layout: responsible for setting world boundaries
         #------------------------------------------------------------
         
         self.spaceLayout = QtWidgets.QGridLayout()
@@ -181,13 +176,12 @@ class mainWindow(QtWidgets.QMainWindow):
         
         
         #------------------------------------------------------------
-        # smooth layout
+        # smooth layout: responsible for selcting filters and smoothing the trajectory
         #------------------------------------------------------------
         self.smoothLayout = QtWidgets.QHBoxLayout()
         
         self.smoothTitle = QtWidgets.QLabel('Filtering and Smoothing')
-        self.smoothTitle.setFont(self.titleFont)
-        
+        self.smoothTitle.setFont(self.titleFont)        
 
         self.selectSmoothing = QtWidgets.QComboBox()
         for s in self.SMOOTHING:    
@@ -202,7 +196,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         
         #------------------------------------------------------------
-        # plot layout
+        # inspect layout: responsible for generating plots
         #------------------------------------------------------------
 
         self.plotLayout = QtWidgets.QGridLayout()
@@ -291,7 +285,7 @@ class mainWindow(QtWidgets.QMainWindow):
         data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
 
         if data_name.find('csv') < 0: 
-            self.send_warning('Not a valid file type. Please use a file of type .csv .')
+            messages.send_warning('Not a valid file type. Please use a file of type .csv .')
         else: 
             self.selectedFile.setText(data_name)
             self.INFO['data_file'] = data_name
@@ -303,7 +297,7 @@ class mainWindow(QtWidgets.QMainWindow):
         the respective line edits, and saved to json for further use'''
         
         if self.INFO['data_file'] == None: 
-            self.send_warning('No File loaded')
+            messages.send_warning('No File loaded')
             return
             
         csv_dict = json.load(open(self.CSV_INFO_FILE))
@@ -326,12 +320,12 @@ class mainWindow(QtWidgets.QMainWindow):
         df = pd.read_csv(tmp_file, header = 0, sep = delim)
         
         time_format = self.INFO['info']['time']
-        if ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE) == None: 
-            self.send_warning('Time format invalid!')
+        if tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE) == None: 
+            messages.send_warning('Time format invalid!')
             return False
             
-        self.INFO['start_time'] = ds.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
-        self.INFO['stop_time'] = ds.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
+        self.INFO['start_time'] = tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
+        self.INFO['stop_time'] = tp.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
         
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
@@ -353,9 +347,6 @@ class mainWindow(QtWidgets.QMainWindow):
         ''' Updates the labels displayed in mainWindow (start/stop/duration time, x/y - min/max). Gets called by timeWindow
         and the changeCoords function as well as when initializing the disply after loading a new dataset'''
         
-        #self.startInfo.setText(str(self.INFO['start_time']) + str(self.INFO['info']['time']) + '\t (' + str(self.INFO['start_frame']) + ')')
-        #self.stopInfo.setText(str(self.INFO['stop_time']) + str(self.INFO['info']['time']) +'\t (' + str(self.INFO['stop_frame']) + ')')
-        
         if self.INFO['info']['time'] in ['s', 'ms']: 
             dur = str(np.round(self.INFO['stop_time'] - self.INFO['start_time'], 2))
             start = str(np.round(self.INFO['start_time'], 2))
@@ -373,18 +364,15 @@ class mainWindow(QtWidgets.QMainWindow):
         for key in self.Border_sizes: 
             self.Border_sizes[key].setText(str(np.round(float(self.INFO[key]), 2)))
 
-        
 
-        
     def changeTime(self):
         ''' when the 'Change'Button is clicked on the time Layout, this function opens a 
         window with sliders to set start and stop time. The selected values are passed back 
         to mainWindows INFO dictionary'''
         
         if self.DataLoaded == False: 
-            self.send_warning('No File loaded')
+            messages.send_warning('No File loaded')
             return
-            #raise Warning('No File loaded')
         
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         delim = csv_dict['write']['delim']
@@ -401,9 +389,8 @@ class mainWindow(QtWidgets.QMainWindow):
         line edits are switched back to labels and the selected coordinate values are save d to the INFO dictionary.'''
         
         if self.DataLoaded == False: 
-            self.send_warning('No File loaded')
+            messages.send_warning('No File loaded')
             return
-            #raise Warning('No File loaded')
      
         borders = ['x_min', 'x_max', 'y_min', 'y_max']
         for key in self.Border_sizes: 
@@ -436,102 +423,50 @@ class mainWindow(QtWidgets.QMainWindow):
     
         for key in dict2: 
              dict1[key] = dict2[key]
-             
-             
-#    def plot_trajectory(self): 
-#        ''' When the 'Plot' Button is clicked this function uses the settings for time and space borders and the tmp file 
-#        created by table window to plot the agents trajectories. The plot Window uses matplotlibs standard navigation toolbar.'''
-#        
-#        if self.DataLoaded == False: 
-#            self.send_warning('No File loaded')
-#            return
-#            #raise Warning('No File loaded')
-#       
-#        csv_dict = json.load(open(self.CSV_INFO_FILE))
-#        delim = csv_dict['write']['delim']
-#        
-#        r = [(self.INFO['x_min'], self.INFO['y_min']), self.INFO['x_max'] - self.INFO['x_min'], self.INFO['y_max'] - self.INFO['y_min']]
-#        df = pd.read_csv(self.TMP_FILE, sep = delim)
-#        print(df.columns)
-#                
-#        d = {}
-#        start_idx = np.where(df['frames'].values == self.INFO['start_frame'])[0][0]
-#        stop_idx = np.where(df['frames'].values == self.INFO['stop_frame'])[0][0]
-#        
-#        for an in self.INFO['agent_names']:
-#            d[an] = (df[an + '_x'].values[start_idx:stop_idx], df[an + '_y'].values[start_idx:stop_idx])
-#        
-#        
-#        self.trajectoryWindow = plotWindow(d, r)
-#        self.trajectoryWindow.exec_()
+
     
     def setSelectSpec(self, index): 
         ''' Updates the second dropdown menu in the inspect layout accourding to the value of the first'''
         self.selectSpec.clear()
         data = str(self.selectType.currentText())
         self.selectSpec.addItems(self.SPECS[data])   
+
     
     def on_pushed_inspect(self): 
+        '''When the inspect Button is clicked this function cuts the data accoring to the current 
+        temporal and spatial borders. Then the data is prepared for plotting depending on the chosen 
+        format finally plotWindow is called for display.'''
+    
         df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)  
-
         representation = str(self.selectType.currentText())
         datatype = str(self.selectSpec.currentText())
-        if representation == 'Trajectory': 
-            data2plot = {an : np.vstack((df[an +'_x'], df[an +'_y'])) for an in self.INFO['agent_names']}
-            self.pW = plotWindow(data2plot, representation, datatype)
-            self.pW.exec_()
-            
-        elif representation == 'Timeline': 
-            if datatype == 'Speed': 
-                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
-                data2plot['time'] = df['seconds']
-            elif datatype == 'Distance': 
-                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
-                data2plot = {c : df[c] for c in dist_cols}
-                data2plot['time'] = df['seconds']
-            self.pW = plotWindow(data2plot, representation, datatype)
-            self.pW.exec_()
-            
-        elif representation == 'Histogramm': 
-            if datatype == 'Speed': 
-                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
-            elif datatype == 'Distance': 
-                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
-                data2plot = {c : df[c] for c in dist_cols}
-            self.pW = plotWindow(data2plot, representation, datatype)
-            self.pW.exec_()
-
-        elif representation == 'Boxplot': 
-            if datatype == 'Speed': 
-                data2plot = {an : df[an + '_speed'] for an in self.INFO['agent_names']}
-            elif datatype == 'Distance': 
-                dist_cols = [c for c in df.columns if c.find('dist') >= 0]
-                data2plot = {c : df[c] for c in dist_cols}
-            self.pW = plotWindow(data2plot, representation, datatype)
-            self.pW.exec_()
-        else: 
-            self.send_warning('selection invalid')
+        
+        data2plot = genPlotData.makeData2Plot(df, representation, datatype, self.INFO, self.PARAM_INFO_FILE)
+        
+        if data2plot == None: 
+            messages.send_warning('selection invalid')
             return
-
-
-
+        else:
+            self.pW = plotWindow(data2plot, representation, datatype)
+            self.pW.exec_()
 
         
     def stats_and_save(self): 
-        ''' when clickig the 'Stats and Save' Button this function calles the stats and save method from basic stats 
-            which creates two csv files: one with timelines and another with single values (like mean, var, borders, etc.)
-            Then a File selection dialog is opened and at the chosen location a folder is created where the results are saved. 
-            Finally a 'goodbye' dialog is sent informing the user where results were saved and asking wheter they want to 
-            continue or close the application'''
+        ''' when clickig the 'Stats and Save' Button this function calles the stats and save method 
+        from basic stats which creates two csv files: one with timelines and another with single values 
+        (like mean, var, borders, etc.). Then a File selection dialog is opened and at the chosen 
+        location a folder is created where the results are saved. Finally a 'goodbye' dialog is sent
+        informing the user where results were saved and asking wheter they want to continue or close 
+        the application'''
             
         if self.DataLoaded == False: 
-            self.send_warning('No File loaded')
+            messages.send_warning('No File loaded')
             return
            
         selected_stats = self.selectStats.currentText()
         
         if selected_stats == 'Fancy': 
-            self.send_info("Sorry, I can't do anything fancy yet")
+            messages.send_info("Sorry, I can't do anything fancy yet")
             return
         else:
             df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)   
@@ -567,11 +502,11 @@ class mainWindow(QtWidgets.QMainWindow):
             csv_dict = json.load(open(self.CSV_INFO_FILE))
             delim = csv_dict['write']['delim']
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
-            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO)
+            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, self.CSV_INFO_FILE, self.FILENAMES_INFO_FILE)
 
             #pf.plot_things(df, results_folder, self.INFO['agent_names'])
             
-            self.send_goodbye(results_folder)
+            messages.send_goodbye(results_folder)
 
         
         
@@ -595,45 +530,11 @@ class mainWindow(QtWidgets.QMainWindow):
                     df[an + '_x'] = smoothing.medfilt(df[an + '_x'].values)
                     df[an + '_y'] = smoothing.medfilt(df[an + '_y'].values)
 
-                self.send_info('Trajectory is now smooth !')
+                messages.send_info('Trajectory is now smooth !')
                 self.INFO['filtered'] = True
                     
                     
-    def send_info(self, text): 
-        '''Sends information dialogue '''
-        
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Information)
-        msg.setText(text)
-        msg.setWindowTitle("INFO")
-        retval = msg.exec_()
 
-        
-    def send_warning(self, text): 
-        '''Sends warning dialogue '''
-        
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setText(text)
-        msg.setWindowTitle("Warning")
-        retval = msg.exec_()
-
-        
-    def send_goodbye(self, folder): 
-        '''Sends information dialogue '''
-        
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Question)
-        msg.setText("Results have been saved to {}. \n Press 'OK' to continue analysis with a new dataset or press 'Cancel' to close the application.".format(folder))
-        msg.setWindowTitle("Continue?")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
-        msg.setDefaultButton(QtWidgets.QMessageBox.Ok)
-        retval = msg.exec_()
-        
-        if retval == 1024:
-            pass
-        else: 
-            self.close()
 
         
     def makeResultsDir(self, base_folder):

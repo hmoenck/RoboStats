@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtGui 
 import pandas as pd
 from numpy import random
+import messages
 import numpy as np
 import sys
 import sip
@@ -81,12 +82,12 @@ class agentWindow(QtWidgets.QWidget):
 
             if len(text) > 0: # don't allow empty names
                 if text[0].isdigit(): # don't allow names to start with int
-                    self.send_warning()
+                    messages.send_warning("Invalid or empty agent names")
                     pass
                 else: 
                     self.AGENT_NAMES.append(text)
             else: 
-                self.send_warning()
+                messages.send_warning("Invalid or empty agent names")
                 pass
                 
         if len(list(set(self.AGENT_NAMES))) == self.nAgents: # no duplicates   
@@ -95,7 +96,7 @@ class agentWindow(QtWidgets.QWidget):
             self.parentWindow.update_checklabels('AGENTS')
             self.home.close()      
         else: 
-            self.send_warning()
+            messages.send_warning("Invalid or empty agent names")
             
             
 
@@ -132,18 +133,6 @@ class agentWindow(QtWidgets.QWidget):
             self.labels.append(l)
             self.custom_names.append(cn)
 
-            
-            
-    def send_warning(self): 
-        ''' opens a Qt Warning Dialog'''
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setText("Invalid or empty agent names")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        retval = msg.exec_()
-        
-        
-        
     
 
 #if __name__ == "__main__":

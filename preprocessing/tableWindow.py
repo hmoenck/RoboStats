@@ -14,7 +14,7 @@ import sys
 from agentWindow import agentWindow
 from settingsWindow import settingsWindow
 import data_processing.basic_stats as basic_stats
-
+import messages
 import json
 
 
@@ -271,8 +271,11 @@ class tableWindow(QtWidgets.QWidget):
         columnlist = []# bulid a list of all columns of the final csv
 
         for key in self.checkLabels.keys(): 
-            for v in self.checkLabels[key].values(): 
-                columnlist.append(int(v) -1)
+            for v in self.checkLabels[key].values():
+                try:  
+                    columnlist.append(int(v) -1)
+                except ValueError: 
+                    valid = False 
          
         if any(x < 0 for x in columnlist): # check if all values were set (default = -1)
             valid = False        
@@ -281,15 +284,7 @@ class tableWindow(QtWidgets.QWidget):
         elif max(columnlist) > self.nColumns: # check if columns are in range of original file
             valid = False            
         return valid
-        
-    def send_warning(self, text): 
-        ''' creates a Qt warning message with custom text''' 
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setWindowTitle("Warning")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setText(text)
-        val = msg.exec_()
+
 
     def save(self):     
         ''' gets called by the save Button. Checks if selected columns are valid, if so, data is saved to a temporary csv file
@@ -305,7 +300,7 @@ class tableWindow(QtWidgets.QWidget):
             basic_stats.speed_and_dist(self.TMP_FILE_TITLE, self.parentWindow.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
             self.home.close()
         else: 
-            self.send_warning('Column selection invalid: Check for empty fields, double indices and indices exceeding size of original file')
+            messages.send_warning('Column selection invalid: Check for empty fields, double indices and indices exceeding size of original file')
             
             
 
@@ -340,9 +335,6 @@ class tableWindow(QtWidgets.QWidget):
         df_new.to_csv(self.TMP_FILE_TITLE, sep = delim)
 
         print('temporary file saved to', self.TMP_FILE_TITLE)
-  
-
-        
         
         #save paramter settings to json
         param_dict = {}
@@ -367,7 +359,6 @@ class tableWindow(QtWidgets.QWidget):
         '''calls the agent window which allows to set number and names of agents'''
         self.aw = agentWindow(self, self.AGENT_NAMES)
         self.aw.show()   
-        
 
         
     def addParams(self): 
@@ -417,48 +408,28 @@ class tableWindow(QtWidgets.QWidget):
             vals = df.count(axis = 1).values # number of non-NaN values per row
             maxx = df.count(axis = 1).max() # maximum number of non-NaN values per row
             delete_rows = len(np.where(vals < maxx)[0])
-            self.send_info('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), 
+            messages.send_info_detail('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), 
             detail = 'Indices of ignored rows: {}'.format(np.where(vals < maxx)[0]))
             df = df.dropna(how = 'any')
 
         except pd.errors.ParserError: 
-            self.send_warning("There seems to be a problem with the file you're trying to open.\n\n \
+            messages.send_warning("There seems to be a problem with the file you're trying to open.\n\n \
             This is usually due to missing values. Please delete incomplete rows and try again.")
             return
             self.close()
 
         return df
-    
-
-    def send_warning(self, text): 
-        ''' creates a Qt warning message with custom text''' 
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setWindowTitle("Warning")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setText(text)
-        val = msg.exec_()
-
-    def send_info(self, text, detail = 'Sometimes more is better. But not always.'): 
-        ''' creates a Qt info message with custom text''' 
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Information)
-        msg.setWindowTitle("Info")
-        msg.setDetailedText(detail)
-        #msg.setInformativeText(detail)
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.setText(text)
-        val = msg.exec_()
-
-if __name__ == "__main__":
-    import sys
-    import numpy as np
-
-    app = QtWidgets.QApplication(sys.argv)
-    app.setApplicationName('Table')
-
-    main = tableWindow('CouzinDataOutWedMar01121659201.csv')
 
 
-    sys.exit(app.exec_())          
+#if __name__ == "__main__":
+#    import sys
+#    import numpy as np
+
+#    app = QtWidgets.QApplication(sys.argv)
+#    app.setApplicationName('Table')
+
+#    main = tableWindow('CouzinDataOutWedMar01121659201.csv')
+
+
+#    sys.exit(app.exec_())          
 
