@@ -15,3 +15,15 @@ def distance(x0, y0, x1, y1):
     
 def trajectory_length(s, dt): 
     return(sum(s*dt))
+    
+def basic_vector_stats(vector): 
+    stats_dict = {}
+    stats_dict[keys] = ['mean', 'var', 'min', '25%', 'median', '75%', 'max']
+    stats_dict['mean'] = np.mean(vector)
+    stats_dict['var'] = np.var(vector)
+    stats_dict['min'] = np.min(vector)
+    stats_dict['25%'] = np.percentile(vector, 25)
+    stats_dict['median'] = np.median(vector)
+    stats_dict['75%'] = np.percentile(vector, 75)
+    stats_dict['max'] = np.max(vector)
+    return stats_dict
