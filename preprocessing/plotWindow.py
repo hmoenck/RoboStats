@@ -80,7 +80,7 @@ class plotWindow(QtWidgets.QDialog):
             ax = self.figure.add_subplot(len(keys), 1, i+1)
             ax.plot(time, self.data2plot[key]) 
             ax.set_title(key)
-            ax.set_ylabel(self.plot_info2 )
+            ax.set_ylabel(self.plot_info2)
             if i < len(keys) -1:
                 ax.xaxis.set_ticklabels([])
             else: 
@@ -96,7 +96,7 @@ class plotWindow(QtWidgets.QDialog):
             ax.plot(self.data2plot[key][0, :], self.data2plot[key][1, :]) 
             ax.set_title('Trajectory')
             ax.set_xlabel('x')
-            ax.set_xlabel('y')
+            ax.set_ylabel('y')
             
             self.canvas.draw()
         
