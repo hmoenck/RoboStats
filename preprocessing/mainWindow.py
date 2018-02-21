@@ -204,21 +204,11 @@ class mainWindow(QtWidgets.QMainWindow):
         #------------------------------------------------------------
         # plot layout
         #------------------------------------------------------------
-#        self.plotLayout = QtWidgets.QVBoxLayout()
-#        
-#        self.plotTitle = QtWidgets.QLabel('Generate Plots')
-#        self.plotTitle.setFont(self.titleFont)
-#        
-#        self.plotButton = QtWidgets.QPushButton('Plot')
-#        self.plotButton.clicked.connect(self.plot_trajectory)
-#        
-#        self.plotLayout.addWidget(self.plotTitle)
-#        self.plotLayout.addWidget(self.plotButton)
 
         self.plotLayout = QtWidgets.QGridLayout()
         self.TYPES = ['Select', 'Trajectory', 'Timeline', 'Histogramm', 'Boxplot']
-        self.SPECS = {'Select': ['-------'], 'Trajectory': ['one agent', 'two agents'], 'Timeline': ['Speed', 'Distance'], 
-    'Histogramm': ['Speed', 'Distance'] , 'Boxplot': ['Speed', 'Distance']}
+        self.SPECS = {'Select': ['-------'], 'Trajectory': ['--------'], 'Timeline': ['Speed', 'Distance', 'Angle'], 
+    'Histogramm': ['Speed', 'Distance', 'Angle'] , 'Boxplot': ['Speed', 'Distance']}
         
         self.plotTitle = QtWidgets.QLabel('Inspect Data')
         self.plotTitle.setFont(self.titleFont)
@@ -227,13 +217,16 @@ class mainWindow(QtWidgets.QMainWindow):
         for t in self.TYPES: 
             self.selectType.addItem(t)
         self.selectType.currentIndexChanged.connect(self.setSelectSpec)
+        self.selectType.setToolTip('Choose the type of plot to be created')
         
         self.selectSpec = QtWidgets.QComboBox(self)
         for t in self.SPECS['Select']: 
             self.selectSpec.addItem(t)
+        self.selectSpec.setToolTip('Choose the data for display')
         
         self.inspectButton = QtWidgets.QPushButton('Inspect')
         self.inspectButton.clicked.connect(self.on_pushed_inspect)
+        self.inspectButton.setToolTip('Clicking this button will open a window showing the selected plot.')
         
         self.plotLayout.addWidget(self.plotTitle, 0, 0)
         self.plotLayout.addWidget(self.selectType, 1, 0)
@@ -399,7 +392,7 @@ class mainWindow(QtWidgets.QMainWindow):
         t = df['time'].values
         f = df['frames'].values
         
-        self.time = timeWindow(self, t, f)
+        self.time = timeWindow(self, t, f, self.INFO)
         self.time.show()   
         
     def changeCoords(self):
