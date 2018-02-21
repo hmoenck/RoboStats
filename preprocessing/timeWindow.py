@@ -3,10 +3,8 @@
 
 from PyQt5 import QtWidgets 
 from PyQt5.QtCore import Qt
-import pandas as pd
 from numpy import random
 import numpy as np
-import sys
 import json
 import settings.data_settings as ds
 
@@ -16,9 +14,6 @@ class timeWindow(QtWidgets.QWidget):
     '''This window shows the current settings of start and stop time (frame) and allows to change them using a slider object'''
 
     def __init__(self, parentWindow, time, frames, init_params):
-    #def __init__(self, time, frames, init_params, parent = None):
-    
-        
     
         self.TIME = time
         self.FRAMES = frames
@@ -27,7 +22,6 @@ class timeWindow(QtWidgets.QWidget):
                           'start_frame': init_params['start_frame'], 'stop_frame': init_params['stop_frame']}
     
         super(timeWindow, self).__init__(parentWindow)
-        #super(timeWindow, self).__init__()
         self.parentWindow = parentWindow
         
         self.DATE_FORMATS_FILE = self.parentWindow.DATE_FORMATS_FILE
@@ -143,24 +137,3 @@ class timeWindow(QtWidgets.QWidget):
         # close application
         self.home.close()
 
-
-        
-
-
-#if __name__ == "__main__":
-#    import sys
-#    import numpy as np
-
-#    app = QtWidgets.QApplication(sys.argv)
-#    app.setApplicationName('Time Sliders')
-#   
-#    t = np.random.randn(100)
-#    f = np.arange(0, 100, 1)
-#    
-#    inits = {'start_time': 9, 'stop_time': 11, 'start_frame':7, 'stop_frame':70}
-#    
-#    
-#    main = timeWindow(t, f, inits)
-#    #main.show()
-
-#    sys.exit(app.exec_())
