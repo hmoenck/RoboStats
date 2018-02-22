@@ -52,6 +52,7 @@ class agentWindow(QtWidgets.QWidget):
         
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
+        self.home.setFont(self.parentWindow.normalFont)
         self.home.show()
         
         

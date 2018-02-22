@@ -52,7 +52,6 @@ class timeWindow(QtWidgets.QWidget):
             slider.setObjectName(lab) 
             slider.setRange(0, len(self.TIME)-1)            
             value = np.where(self.FRAMES == self.START_STOP[lab + '_frame'])[0][0]
-            print(value)
             slider.setValue(value)            
             slider.valueChanged.connect(self.set_time)
             
