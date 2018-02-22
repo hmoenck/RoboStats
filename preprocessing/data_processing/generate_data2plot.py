@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd 
+import json
 
 
 def makeData2Plot(df, representation, datatype, info, params): 
