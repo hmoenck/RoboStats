@@ -80,11 +80,14 @@ class plotWindow(QtWidgets.QDialog):
             ax = self.figure.add_subplot(len(keys), 1, i+1)
             ax.plot(time, self.data2plot[key]) 
             ax.set_title(key)
-            ax.set_ylabel(self.plot_info2)
+            if self.plot_info2 == 'Speed': 
+                ax.set_ylabel(self.plot_info2 + ' [cm/s]')
+            else: 
+                ax.set_ylabel(self.plot_info2)
             if i < len(keys) -1:
                 ax.xaxis.set_ticklabels([])
             else: 
-                ax.set_xlabel('time')
+                ax.set_xlabel('time [s]')
             
             self.canvas.draw()
 
