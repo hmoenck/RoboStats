@@ -232,15 +232,17 @@ class mainWindow(QtWidgets.QMainWindow):
         #------------------------------------------------------------
         self.finalLayout = QtWidgets.QHBoxLayout()
 
-        self.selectStats= QtWidgets.QComboBox()
-        for s in self.STATS_OPTIONS:    
-            self.selectStats.addItem(s)
- 
-        self.saveButton = QtWidgets.QPushButton('Stats and save')
+#        self.selectStats= QtWidgets.QComboBox()
+#        for s in self.STATS_OPTIONS:    
+#            self.selectStats.addItem(s)
+        self.saveOptions = QtWidgets.QPushButton('Options')
+        self.saveOptions.clicked.connect(self.on_save_options_clicked)
+                
+        self.saveButton = QtWidgets.QPushButton('Save')
         self.saveButton.clicked.connect(self.stats_and_save)
         
 
-        self.finalLayout.addWidget(self.selectStats)
+        self.finalLayout.addWidget(self.saveOptions)
         self.finalLayout.addWidget(self.saveButton)
         
         #------------------------------------------------------------
@@ -289,14 +291,14 @@ class mainWindow(QtWidgets.QMainWindow):
         else: 
             self.selectedFile.setText(data_name)
             self.INFO['data_file'] = data_name
-            print( self.INFO['data_file'])
+            print(self.INFO['data_file'])
 
             
     def on_load_clicked(self):
         ''' When the 'Load' Button is clicked, this function passes the filkename to tableWindow. csv parameters are read in from 
         the respective line edits, and saved to json for further use'''
-        
-        if self.INFO['data_file'] == None: 
+       
+        if len(self.selectedFile.text()) == 0: 
             messages.send_warning('No File loaded')
             return
             
@@ -334,9 +336,9 @@ class mainWindow(QtWidgets.QMainWindow):
         self.INFO['stop_frame'] = df['frames'].values[-1]
         
         self.INFO['duration_time'] = self.INFO['start_time'] - self.INFO['stop_time']
-        self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])
-        
+        self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])        
 
+        
         self.INFO['x_min'] = min(min(df[an + '_x'].values) for an in self.INFO['agent_names'])
         self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
         self.INFO['x_max'] = max(max(df[an + '_x'].values) for an in self.INFO['agent_names'])
@@ -448,7 +450,11 @@ class mainWindow(QtWidgets.QMainWindow):
         '''When the inspect Button is clicked this function cuts the data accoring to the current 
         temporal and spatial borders. Then the data is prepared for plotting depending on the chosen 
         format finally plotWindow is called for display.'''
-    
+        
+        if self.DataLoaded == False: 
+            messages.send_warning('No File loaded')
+            return
+        
         df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)  
         representation = str(self.selectType.currentText())
         datatype = str(self.selectSpec.currentText())
@@ -474,12 +480,9 @@ class mainWindow(QtWidgets.QMainWindow):
         if self.DataLoaded == False: 
             messages.send_warning('No File loaded')
             return
-           
-        selected_stats = self.selectStats.currentText()
-        
-        if selected_stats == 'Fancy': 
-            messages.send_info("Sorry, I can't do anything fancy yet")
-            return
+
+        if False: 
+            pass
         else:
             df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)   
             
@@ -527,7 +530,8 @@ class mainWindow(QtWidgets.QMainWindow):
         smoothing function is applied on the whole trajectory (not only the selected parts). '''
         
         if self.DataLoaded == False: 
-            raise Warning('No File loaded')
+            messages.send_warning('No File loaded')
+            return
         
         smooth = str(self.selectSmoothing.currentText())
         if smooth == None: 
@@ -545,7 +549,8 @@ class mainWindow(QtWidgets.QMainWindow):
                 messages.send_info('Trajectory is now smooth !')
                 self.INFO['filtered'] = True
                     
-                    
+    def on_save_options_clicked(self): 
+        pass                    
 
 
         
