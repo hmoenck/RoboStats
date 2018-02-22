@@ -130,6 +130,8 @@ class tableWindow(QtWidgets.QWidget):
 
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.layoutVertical)
+        self.normalFont = self.parentWindow.normalFont
+        self.home.setFont(self.normalFont)
         self.home.show()
 
 
@@ -158,7 +160,7 @@ class tableWindow(QtWidgets.QWidget):
         ''' reacts to changes in the text-edit field for column selection'''  
         sender = self.sender()
         senderName = sender.objectName()
-        print(senderName)
+       #print(senderName)
         for key in self.checkLabels.keys():
             if senderName in self.checkLabels[key].keys(): 
                 self.checkLabels[key][senderName] = sender.text()
@@ -292,12 +294,14 @@ class tableWindow(QtWidgets.QWidget):
         print(self.checkLabels)
         valid = self.check_entries()
         if valid: 
-            self.build_csv(self.fileName)
-            self.parentWindow.INFO['info'] = self.PARAM_INFO
+            if self.build_csv(self.fileName) == False: 
+                return
             self.parentWindow.INFO['agent_names'] = self.AGENT_NAMES
+            basic_stats.speed_and_dist(self.TMP_FILE_TITLE, self.parentWindow.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+            self.parentWindow.INFO['info'] = self.PARAM_INFO
             if self.parentWindow.init_Info(self.TMP_FILE_TITLE) == False: 
                 return
-            basic_stats.speed_and_dist(self.TMP_FILE_TITLE, self.parentWindow.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+            #basic_stats.speed_and_dist(self.TMP_FILE_TITLE, self.parentWindow.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
             self.home.close()
         else: 
             messages.send_warning('Column selection invalid: Check for empty fields, double indices and indices exceeding size of original file')
@@ -332,8 +336,21 @@ class tableWindow(QtWidgets.QWidget):
             df_new = df_new.drop(df.index[0])
         
         delim = csv_dict['write']['delim']
+        
+        # check for invalid values in selcted columns 
+        should_be_floats = ['_x', '_y', '_angle']
+        for an in self.AGENT_NAMES: 
+            for sbf in should_be_floats: 
+                if not self.is_float(df_new[an + sbf].values[3]): 
+                    messages.send_warning('Data type of column {} not understood'.format(an+sbf))
+                    return False
+                    
+        if not self.is_float(df_new['frames'].values[3]):
+            messages.send_warning('Data type of column frames not understood')
+            return False
+        
+        # save to tmp
         df_new.to_csv(self.TMP_FILE_TITLE, sep = delim)
-
         print('temporary file saved to', self.TMP_FILE_TITLE)
         
         #save paramter settings to json
@@ -420,6 +437,12 @@ class tableWindow(QtWidgets.QWidget):
 
         return df
 
+    def is_float(self, data): 
+        try: 
+            float(data) 
+            return True
+        except ValueError:
+            return False
 
 #if __name__ == "__main__":
 #    import sys
