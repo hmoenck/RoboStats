@@ -14,11 +14,26 @@ def distance(x0, y0, x1, y1):
     return d
     
 def trajectory_length(s, dt): 
+    '''calculates total length of trajectory from speed and dt '''
     return(sum(s*dt))
+    
+def time_close(dist, max_dist, dt, percent = False):
+    '''calculates the amount of time two agents were closer than a given threshold. 
+    If percent = True instead of absolute time the percentage is calculated'''
+    if len(dt) > 1: 
+        dt = np.mean(dt)
+    time_close = len(dist[dist < max_dist])*dt
+    
+    if percent: 
+        time_total = len(dist)*dt
+        time_close /= time_total
+        
+    return time_close    
+
     
 def basic_vector_stats(vector): 
     stats_dict = {}
-    stats_dict[keys] = ['mean', 'var', 'min', '25%', 'median', '75%', 'max']
+    stats_dict['keys'] = ['mean', 'var', 'min', '25%', 'median', '75%', 'max']
     stats_dict['mean'] = np.mean(vector)
     stats_dict['var'] = np.var(vector)
     stats_dict['min'] = np.min(vector)
