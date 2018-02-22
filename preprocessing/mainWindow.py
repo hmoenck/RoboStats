@@ -46,6 +46,8 @@ class mainWindow(QtWidgets.QMainWindow):
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
         FILENAMES_INFO_FILE = 'settings/file_names.json'
+        file_info = json.load(open(FILENAMES_INFO_FILE))
+        
     except FileNotFoundError:
         twoFoldersup =  os.path.dirname(os.path.dirname(os.getcwd()))
         CSV_INFO_FILE = twoFoldersup + 'settings/csv_info.json'
@@ -261,7 +263,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.mainLayout.addLayout(self.plotLayout)
         self.mainLayout.addWidget(self.HLine())
         
-        self.finalTitle = QtWidgets.QLabel('Statistics')
+        self.finalTitle = QtWidgets.QLabel('Finalize')
         self.finalTitle.setFont(self.titleFont)
         self.mainLayout.addWidget(self.finalTitle)
         self.mainLayout.addLayout(self.finalLayout)
