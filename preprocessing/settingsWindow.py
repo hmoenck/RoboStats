@@ -10,10 +10,6 @@ import numpy as np
 import sys
 import sip
 import json
-import settings.default_params as default
-
-
-
 
 class settingsWindow(QtWidgets.QWidget):
     ''' Allows to set time format (datetime, milliseconds or seconds), angle format (deg or rad), and additional parameters'''
@@ -85,6 +81,7 @@ class settingsWindow(QtWidgets.QWidget):
         
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
+        self.home.setFont(self.parentWindow.normalFont)
         self.home.show()
 
             
@@ -150,15 +147,7 @@ class settingsWindow(QtWidgets.QWidget):
         self.parentWindow.update_checklabels('OTHER')
         self.home.close()
 
-            
-    def send_warning(self, text): 
-        ''' opens a Qt Warning Dialog'''
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setText(text)
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        retval = msg.exec_()
- 
+
         
     def HLine(self):
         ''' adds a sunken horizontal line to the display'''
