@@ -1,17 +1,26 @@
 import numpy as np
 import pandas as pd
-import settings.default_params as default
 from stats.correlations import correlation_relative_velocity
+import stats.simple as stats
+import json
 
-def makeFile(folder, csv_file, info, single_values): 
-    print(single_values)
-    name = folder + '/'+ default.info_file
-    sep = default.csv_delim
+def makeFile(folder, csv_file, info, csv_info, file_names): 
+    # TODO single values is missing, conatned only whole trajectory length
+
+    file_info = json.load(open(file_names))
+    INFO_FILE = file_info['info_file']
+    name = folder + '/'+ INFO_FILE
+
+    csv_dict = json.load(open(csv_info))
+    sep = csv_dict['write']['delim']
+    
+    distance_thresholds = [5,10,15,20]
+    
     with open(name, 'w') as f: 
         
-        df = pd.read_csv(csv_file, header = 0, sep = default.csv_delim)
+        df = pd.read_csv(csv_file, header = 0, sep = sep)
         cols = df.columns
-
+        dt = np.gradient(df['seconds'].values)
 
         data_name = info['data_file'][info['data_file'].rfind('/')+1:]
         f.write('Source,' + data_name + '\n')
@@ -26,33 +35,39 @@ def makeFile(folder, csv_file, info, single_values):
 
         # speed results
         for agent in info['agent_names']: 
-            sv = [s for s in single_values.keys() if s.find(agent) > -1]
-            for s in sv: 
-                f.write('trajectory_length' + str(agent) + sep + str(single_values[s]) + '\n')
-            f.write('mean_speed_' + str(agent) + sep + str(np.mean(df[agent + '_speed'].values)) + '\n')
-            f.write('var_speed_' + str(agent) + sep + str(np.var(df[agent + '_speed'].values)) + '\n')
-            f.write('min_speed_' + str(agent) + sep + str(np.min(df[agent + '_speed'].values)) + '\n')
-            f.write('25%_speed_' + str(agent) + sep + str(np.percentile(df[agent + '_speed'].values, 25)) + '\n')
-            f.write('median_speed_' + str(agent) + sep + str(np.median(df[agent + '_speed'].values)) + '\n')
-            f.write('75%_speed_' + str(agent) + sep + str(np.percentile(df[agent + '_speed'].values, 75)) + '\n')
-            f.write('max_speed_' + str(agent) + sep + str(np.max(df[agent + '_speed'].values)) + '\n')
             
+            speed = df[agent + '_speed'].values
+            
+            # claculate length of trajectory
+            trajectory = stats.trajectory_length(speed, dt)
+            f.write('trajectory_length' + str(agent) + sep + str(trajectory) + '\n')
+
+            # calculate speed statistics
+            speed_values = stats.basic_vector_stats(speed)
+            for key in speed_values['keys']: 
+                f.write(agent + '_speed_' + key + sep + str(speed_values[key]) + '\n')
+        
+        # calculate distance statistics    
         dist_cols = [c for c in cols if c.find('dist') > 0]
-        for dist in dist_cols: 
-            idx = dist.find('dist')
-            print(dist)
-            print(idx)
-            f.write('mean_dist_' + dist[:idx] + sep + str(np.mean(df[dist].values)) + '\n')
-            f.write('var_dist_' + dist[:idx] + sep + str(np.var(df[dist].values)) + '\n')
-            f.write('min_dist_' + dist[:idx] + sep + str(np.min(df[dist].values)) + '\n')
-            f.write('25%_dist_' + dist[:idx] + sep + str(np.percentile(df[dist].values, 25)) + '\n')
-            f.write('median_dist_' + dist[:idx] + sep + str(np.median(df[dist].values)) + '\n')
-            f.write('75%_dist_' + dist[:idx] + sep + str(np.percentile(df[dist].values, 75)) + '\n')
-            f.write('max_dist_' + dist[:idx] + sep + str(np.max(df[dist].values)) + '\n')
+        for d in dist_cols: 
+            idx = d.find('dist')
+            dist = df[d].values
+            
+            dist_values = stats.basic_vector_stats(dist)
+            for key in dist_values['keys']: 
+                f.write(d[:idx] + 'dist_' + key + sep + str(dist_values[key]) + '\n')
+            
+            # calculate amount of time agents were closer than a threshold
+            for dist_t in distance_thresholds: 
+                time_close = stats.time_close(dist, dist_t, dt, percent = False)  
+                percent_close = stats.time_close(dist, dist_t, dt, percent = True)  
+                f.write(d[:idx] + 'closer_' + str(dist_t) + 'cm_(s)' + sep + str(time_close) +'\n')
+                f.write(d[:idx] + 'closer_' + str(dist_t) + 'cm_(%)' + sep + str(percent_close) + '\n')
+
         
         for i in range(len(info['agent_names'])): 
             for j in range(i+1, len(info['agent_names'])): 
-                print('Calculating Pearson relvel correlation between {} and {}'.format(info['agent_names'][i], info['agent_names'][j]))
+                print('Calculating Pearson correlation of realtive velocity between {} and {}'.format(info['agent_names'][i], info['agent_names'][j]))
                 
                 a0 = info['agent_names'][i]
                 a1 = info['agent_names'][j]
