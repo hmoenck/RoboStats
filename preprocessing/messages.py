@@ -30,7 +30,7 @@ def send_warning(text):
     retval = msg.exec_()
 
     
-def send_goodbye(folder): 
+def send_goodbye(widget, folder): 
     '''Sends information dialogue '''
     
     msg = QtWidgets.QMessageBox()
@@ -44,4 +44,4 @@ def send_goodbye(folder):
     if retval == 1024:
         pass
     else: 
-        self.close()
+        widget.close()
