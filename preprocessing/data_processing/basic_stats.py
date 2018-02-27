@@ -104,10 +104,8 @@ def get_seconds_from_time(timestamps, time_format):
     elif time_format == 'ms': 
         print('convert ms to s ')
         seconds = timestamps/1000 
-        if seconds[0] < 1e-10: 
-            seconds = seconds - seconds[1]
-        else: 
-            seconds = seconds - seconds[0]
+
+        seconds = seconds - seconds[0]
         c = np.array(list(Counter(np.round(seconds)).values())) #count all appearances of full seconds
         FPS = mode(c)[0][0]
         DT = 1./FPS
@@ -116,10 +114,6 @@ def get_seconds_from_time(timestamps, time_format):
     elif time_format == 's': 
         print('convert s to s')
         seconds = timestamps - timestamps[0]
-        if seconds[0] < 1e-10: 
-            seconds = seconds - seconds[1]
-        else: 
-            seconds = seconds - seconds[0]
         c = np.array(list(Counter(np.round(seconds)).values())) #count all appearances of full seconds
         FPS = mode(c)[0][0]
         DT = 1./FPS
