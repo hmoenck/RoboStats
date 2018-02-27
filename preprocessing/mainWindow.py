@@ -510,7 +510,7 @@ class mainWindow(QtWidgets.QMainWindow):
                     if col.find(c) > 0: 
                         new_order.append(col)
 
-            df = df.reindex_axis(new_order, axis = 1)
+            df = df.reindex(new_order, axis = 1)
             
             
             results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -523,7 +523,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
             #pf.plot_things(df, results_folder, self.INFO['agent_names'])
             
-            messages.send_goodbye(results_folder)
+            messages.send_goodbye(self.home, results_folder)
 
         
         
