@@ -1,1 +1,12 @@
-{"agent_specifications": ["_x", "_y", "_angle"], "other": [], "muesli_x": "7", "time": "2", "muesli_y": "8", "time_labels": ["frames", "time"], "frames": 1, "agent_names": ["muesli"], "info": {"angle": "deg", "time": "ms"}, "muesli_angle": "9"}
+{
+	"agent_specifications": ["_x", "_y", "_angle"], 
+	"other": [], 
+	"agent_x": "7", 
+	"time": "2", 
+	"agent_y": "8", 
+	"time_labels": ["frames", "time"], 
+	"frames": 1, 
+	"agent_names": ["agent"], 
+	"info": {"angle": "deg", "time": "ms"}, 
+	"agent_angle": "9"
+}
