@@ -8,16 +8,13 @@ from numpy import random
 import numpy as np
 import sys
 import sip
-
 import matplotlib
 matplotlib.use('Qt5Agg')
 
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
 from matplotlib.figure import Figure
-import matplotlib.patches as patches
-
 import seaborn as sns
 sns.set()
 
