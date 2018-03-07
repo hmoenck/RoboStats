@@ -47,20 +47,21 @@ class mainWindow(QtWidgets.QMainWindow):
         CSV_INFO_FILE = 'settings/csv_info.json'
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
-        FILENAMES_INFO_FILE = 'settings/file_names.json'
+        #FILENAMES_INFO_FILE = 'settings/file_names.json'
         OPTIONS_INFO_FILE = 'settings/options.json'
-        file_info = json.load(open(FILENAMES_INFO_FILE))
+        options = json.load(open(OPTIONS_INFO_FILE))
         
     except FileNotFoundError:
         twoFoldersup =  os.path.dirname(os.path.dirname(os.getcwd()))
         CSV_INFO_FILE = twoFoldersup + 'settings/csv_info.json'
         PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
-        FILENAMES_INFO_FILE = twoFoldersup + 'settings/file_names.json'
+        #FILENAMES_INFO_FILE = twoFoldersup + 'settings/file_names.json'
         OPTIONS_INFO_FILE = twoFoldersup + 'settings/options.json'
     
-    file_info = json.load(open(FILENAMES_INFO_FILE))
-    TMP_FILE = file_info['tmp_file']
+    options = json.load(open(OPTIONS_INFO_FILE))
+    TMP_FILE = options['tmp_file']
+    
     
 
     def __init__(self, parent = None):
@@ -98,8 +99,8 @@ class mainWindow(QtWidgets.QMainWindow):
         self.init_browse_info()
         
         self.openInView = QtWidgets.QCheckBox('view')
-        self.openInView.setCheckState(2)
-        #self.openInView.setEnabled(False)
+        options = json.load(open(self.OPTIONS_INFO_FILE))
+        self.openInView.setCheckState(options['view'])
         
         self.loadButton = QtWidgets.QPushButton('Load')
         self.loadButton.clicked.connect(self.on_load_clicked)
@@ -371,13 +372,18 @@ class mainWindow(QtWidgets.QMainWindow):
             try: 
                 basic_stats.speed_and_dist(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
             except TypeError: 
-                messages.send_warning('cant do stats')
+                messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return 
                 
             self.INFO['info'] = columns['info']
             if self.init_Info(self.TMP_FILE) == False:
-                messages.send_warning('cant init info')
+                messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return
+            
+            options = json.load(open(self.OPTIONS_INFO_FILE))
+            options['view'] = self.openInView.checkState()
+            with open(self.OPTIONS_INFO_FILE, 'w') as fp:
+                json.dump(options, fp)
         
     
     def init_Info(self, tmp_file): 
@@ -403,9 +409,12 @@ class mainWindow(QtWidgets.QMainWindow):
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
         
-        self.INFO['duration_time'] = self.INFO['start_time'] - self.INFO['stop_time']
-        self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])        
-
+        
+        try: 
+            self.INFO['duration_time'] = self.INFO['start_time'] - self.INFO['stop_time']
+            self.INFO['duration_frame'] = int(df['frames'].values[-1]) - int(df['frames'].values[0])        
+        except (TypeError, ValueError) as e: 
+            return False
         
         self.INFO['x_min'] = min(min(df[an + '_x'].values) for an in self.INFO['agent_names'])
         self.INFO['y_min'] = min(min(df[an + '_y'].values) for an in self.INFO['agent_names'])
@@ -594,7 +603,7 @@ class mainWindow(QtWidgets.QMainWindow):
             csv_dict = json.load(open(self.CSV_INFO_FILE))
             delim = csv_dict['write']['delim']
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
-            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, self.CSV_INFO_FILE, self.FILENAMES_INFO_FILE)
+            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
 
             # plot part 
             options = json.load(open(self.OPTIONS_INFO_FILE))
