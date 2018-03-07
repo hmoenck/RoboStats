@@ -15,6 +15,7 @@ import sip
 from tableWindow import tableWindow
 from timeWindow import timeWindow
 from plotWindow import plotWindow
+from optionsWindow import optionsWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import data_processing.time_parsers as tp
@@ -38,6 +39,7 @@ class mainWindow(QtWidgets.QMainWindow):
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
     STATS_OPTIONS = ['Simple', 'Fancy']
     
+    
     DataLoaded = False
 
         
@@ -46,6 +48,7 @@ class mainWindow(QtWidgets.QMainWindow):
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
         FILENAMES_INFO_FILE = 'settings/file_names.json'
+        OPTIONS_INFO_FILE = 'settings/options.json'
         file_info = json.load(open(FILENAMES_INFO_FILE))
         
     except FileNotFoundError:
@@ -54,6 +57,7 @@ class mainWindow(QtWidgets.QMainWindow):
         PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
         FILENAMES_INFO_FILE = twoFoldersup + 'settings/file_names.json'
+        OPTIONS_INFO_FILE = twoFoldersup + 'settings/options.json'
     
     file_info = json.load(open(FILENAMES_INFO_FILE))
     TMP_FILE = file_info['tmp_file']
@@ -285,9 +289,20 @@ class mainWindow(QtWidgets.QMainWindow):
             
     def on_browse_clicked(self): 
         ''' When the 'Browse' Button is clicked this function opens a File selection dialog, checks wheteher the selected file is 
-        of correct type (csv) and writes the filepath to the upper line edit'''
-        data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')[0]
-
+        of correct type (csv) and writes the filepath to the upper line edit. Additionally the path to the selected datafile will be a
+        added to the options dictionary, containing default paths. '''
+        options = json.load(open(self.OPTIONS_INFO_FILE))
+        data_folder = options['data_folder']
+        
+        if len(data_folder) == 0: 
+            data_folder = os.getenv("HOME")
+            
+        data_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File',  data_folder)[0]
+        options['data_folder'] = data_name[:data_name.rfind('/')]
+        
+        with open(self.OPTIONS_INFO_FILE, 'w') as op:
+            json.dump(options, op)
+        
         if data_name.find('csv') < 0: 
             messages.send_warning('Not a valid file type. Please use a file of type .csv .')
         else: 
@@ -457,10 +472,9 @@ class mainWindow(QtWidgets.QMainWindow):
             messages.send_warning('No File loaded')
             return
         
-        df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)  
+        df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE) 
         representation = str(self.selectType.currentText())
         datatype = str(self.selectSpec.currentText())
-        
         data2plot = genPlotData.makeData2Plot(df, representation, datatype, self.INFO, self.PARAM_INFO_FILE)
         
         if data2plot == None: 
@@ -512,8 +526,18 @@ class mainWindow(QtWidgets.QMainWindow):
 
             df = df.reindex(new_order, axis = 1)
             
+            options = json.load(open(self.OPTIONS_INFO_FILE))
+            save_folder = options['save_folder']
+            if len(save_folder) == 0: 
+                save_folder = os.getenv("HOME")
             
-            results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+            results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", save_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            options['save_folder'] = results_folder_super
+            
+            with open(self.OPTIONS_INFO_FILE, 'w') as of: 
+                json.dump(options, of)
+            
+
             results_folder = self.makeResultsDir(results_folder_super + '/')
             
             csv_dict = json.load(open(self.CSV_INFO_FILE))
@@ -521,9 +545,28 @@ class mainWindow(QtWidgets.QMainWindow):
             df.to_csv(results_folder + '/timelines.csv', sep = delim)   
             genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, self.CSV_INFO_FILE, self.FILENAMES_INFO_FILE)
 
-            #pf.plot_things(df, results_folder, self.INFO['agent_names'])
+            # plot part 
+            options = json.load(open(self.OPTIONS_INFO_FILE))
+            plot_instructions = options['plot_selection']
+            pf.plot_things(df, results_folder, self.INFO['agent_names'], plot_instructions)
             
-            messages.send_goodbye(self.home, results_folder)
+#            from scipy.stats import spearmanr
+#            from scipy.stats import pearsonr
+#            for i in range(len(self.INFO['agent_names'])): 
+#                for j in range(i+1, len(self.INFO['agent_names'])): 
+#                    a0 = self.INFO['agent_names'][i]
+#                    a1 = self.INFO['agent_names'][j]
+#                    
+#                
+#                    print(a0 + ''+ a1 )
+#                    print('Pearson Corr Speed:  ', pearsonr(df[a0 + '_speed'].values, df[a1 + '_speed'].values))
+#                    print('Pearson Corr vx:  ', pearsonr(df[a0 + '_vx'].values, df[a1 + '_vx'].values))           
+#                    print('Pearson Corr vy:  ', pearsonr(df[a0 + '_vy'].values, df[a1 + '_vy'].values))      
+#                    print('Np.Corr Speed: ', np.correlate(df[a0 + '_speed'].values, df[a1 + '_speed'].values))   
+#                    
+#                    print('Pearson x: ', pearsonr(df[a0 + '_x'].values, df[a1 + '_x'].values))     
+#                    print('Np.Corr x: ', np.correlate(df[a0 + '_x'].values, df[a1 + '_x'].values))   
+            messages.send_goodbye(self, results_folder)
 
         
         
@@ -552,7 +595,8 @@ class mainWindow(QtWidgets.QMainWindow):
                 self.INFO['filtered'] = True
                     
     def on_save_options_clicked(self): 
-        pass                    
+        self.oW = optionsWindow(self)  
+        self.oW.show()                
 
 
         
