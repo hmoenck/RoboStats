@@ -5,7 +5,7 @@ import csv
 import sip
 
 from PyQt5 import QtWidgets 
-from PyQt5 import QtGui # for QFont, QStandardItemModel
+from PyQt5 import QtGui 
 from PyQt5 import QtCore
 import numpy as np
 import pandas as pd
@@ -425,9 +425,10 @@ class tableWindow(QtWidgets.QWidget):
             vals = df.count(axis = 1).values # number of non-NaN values per row
             maxx = df.count(axis = 1).max() # maximum number of non-NaN values per row
             delete_rows = len(np.where(vals < maxx)[0])
-            messages.send_info_detail('NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), 
+            messages.send_info_detail('(1)To speed up the display process only the first 100 rows of data will be shown. \n(2)NaN values have been detected in {} rows. These rows will be ignored in the following process.'.format(str(delete_rows)), 
             detail = 'Indices of ignored rows: {}'.format(np.where(vals < maxx)[0]))
             df = df.dropna(how = 'any')
+            df = df.head(100)
 
         except pd.errors.ParserError: 
             messages.send_warning("There seems to be a problem with the file you're trying to open.\n\n \
