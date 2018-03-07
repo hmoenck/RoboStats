@@ -47,7 +47,6 @@ class mainWindow(QtWidgets.QMainWindow):
         CSV_INFO_FILE = 'settings/csv_info.json'
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
-        #FILENAMES_INFO_FILE = 'settings/file_names.json'
         OPTIONS_INFO_FILE = 'settings/options.json'
         options = json.load(open(OPTIONS_INFO_FILE))
         
@@ -56,7 +55,6 @@ class mainWindow(QtWidgets.QMainWindow):
         CSV_INFO_FILE = twoFoldersup + 'settings/csv_info.json'
         PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
-        #FILENAMES_INFO_FILE = twoFoldersup + 'settings/file_names.json'
         OPTIONS_INFO_FILE = twoFoldersup + 'settings/options.json'
     
     options = json.load(open(OPTIONS_INFO_FILE))
@@ -602,11 +600,16 @@ class mainWindow(QtWidgets.QMainWindow):
             
             csv_dict = json.load(open(self.CSV_INFO_FILE))
             delim = csv_dict['write']['delim']
-            df.to_csv(results_folder + '/timelines.csv', sep = delim)   
-            genStats.makeFile(results_folder, results_folder + '/timelines.csv', self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
+            
+            options = json.load(open(self.OPTIONS_INFO_FILE))
+            
+            time_file = options['timeline_file']
+            
+            df.to_csv(results_folder + '/' + time_file, sep = delim)   
+            genStats.makeFile(results_folder, results_folder + '/' + time_file, self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
 
             # plot part 
-            options = json.load(open(self.OPTIONS_INFO_FILE))
+
             plot_instructions = options['plot_selection']
             pf.plot_things(df, results_folder, self.INFO['agent_names'], plot_instructions)
             
