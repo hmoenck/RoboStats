@@ -99,7 +99,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         self.openInView = QtWidgets.QCheckBox('view')
         self.openInView.setCheckState(2)
-        self.openInView.setEnabled(False)
+        #self.openInView.setEnabled(False)
         
         self.loadButton = QtWidgets.QPushButton('Load')
         self.loadButton.clicked.connect(self.on_load_clicked)
@@ -322,11 +322,62 @@ class mainWindow(QtWidgets.QMainWindow):
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         csv_dict['read']['delim'] = self.setDelim.text()
         csv_dict['read']['skip_rows'] = int(self.setSkipRows.text())
+        
         with open(self.CSV_INFO_FILE, 'w') as fp:
             json.dump(csv_dict, fp)
+            
+        if self.openInView.checkState() == 2:    
+            self.table = tableWindow(self, self.INFO['data_file'])
+            self.table.show()        
         
-        self.table = tableWindow(self, self.INFO['data_file'])
-        self.table.show()        
+        else: 
+            columns = json.load(open(self.PARAM_INFO_FILE))
+            time_labels = columns['time_labels']
+            agent_names = columns['agent_names']
+            agent_specs = columns['agent_specifications']
+            other = columns['other']
+            
+            df = pd.read_csv(self.selectedFile.text(), 
+                            header = 0, 
+                            sep = csv_dict['read']['delim'], 
+                            skiprows = csv_dict['read']['skip_rows'], 
+                            comment = csv_dict['read']['comment'])
+            
+            df_columns = {
+            'TIME': {time_labels[i] : columns[time_labels[i]] for i in range(len(time_labels))}, 
+            'AGENTS': {}, 
+            'OTHER': {other[i] : columns[other[i]] for i in range(len(other))} } 
+                
+            for k in range(len(agent_names)): 
+                for j in range(len(agent_specs)): 
+                    key = agent_names[k]+agent_specs[j]    
+                    df_columns['AGENTS'][key] = columns[key]
+            
+            print(df_columns)
+            real_indices = []
+            titles = []
+            for key1 in df_columns.keys(): 
+                for key2 in df_columns[key1].keys(): 
+                    titles.append(key2)
+                    real_indices.append(int(df_columns[key1][key2])-1)
+
+            df_new = df.iloc[:, real_indices]
+            df_new.columns = titles
+            df_new = df_new.dropna(how = 'any') 
+            df_new.to_csv(self.TMP_FILE, sep = csv_dict['write']['delim'])
+            print('temporary file saved to', self.TMP_FILE)
+            
+            self.INFO['agent_names'] = agent_names
+            try: 
+                basic_stats.speed_and_dist(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
+            except TypeError: 
+                messages.send_warning('cant do stats')
+                return 
+                
+            self.INFO['info'] = columns['info']
+            if self.init_Info(self.TMP_FILE) == False:
+                messages.send_warning('cant init info')
+                return
         
     
     def init_Info(self, tmp_file): 
