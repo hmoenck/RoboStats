@@ -160,7 +160,6 @@ class tableWindow(QtWidgets.QWidget):
         ''' reacts to changes in the text-edit field for column selection'''  
         sender = self.sender()
         senderName = sender.objectName()
-       #print(senderName)
         for key in self.checkLabels.keys():
             if senderName in self.checkLabels[key].keys(): 
                 self.checkLabels[key][senderName] = sender.text()
@@ -330,12 +329,12 @@ class tableWindow(QtWidgets.QWidget):
         df_new.columns = list(header_dict.keys())
         df_new = df_new.dropna(how = 'any')    
         
-        print(header_dict)
+        #print(header_dict)
 
         if type(df_new['frames'].values[0]) == str: #drop original header
             df_new = df_new.drop(df.index[0])
         
-        delim = csv_dict['write']['delim']
+        
         
         # check for invalid values in selcted columns 
         should_be_floats = ['_x', '_y', '_angle']
@@ -350,6 +349,7 @@ class tableWindow(QtWidgets.QWidget):
             return False
         
         # save to tmp
+        delim = csv_dict['write']['delim']
         df_new.to_csv(self.TMP_FILE_TITLE, sep = delim)
         print('temporary file saved to', self.TMP_FILE_TITLE)
         
@@ -367,9 +367,6 @@ class tableWindow(QtWidgets.QWidget):
         
         with open(self.PARAM_INFO_FILE, 'w') as fp:
             json.dump(param_dict, fp)
-        
-        
-        
         
   
     def change_agents(self): 
@@ -407,8 +404,7 @@ class tableWindow(QtWidgets.QWidget):
             for j in range(len(self.AGENT_DATA)): 
                 key = self.AGENT_NAMES[k]+self.AGENT_DATA[j]    
                 self.checkLabels['AGENTS'][key] = param_dict[key]
-        print(self.checkLabels)
-
+        
 
     def open_data(self):
         ''' uses the parameters from self.CSV_INFO_FILE and tries to open the datafile with pandas. If NaN values are 
