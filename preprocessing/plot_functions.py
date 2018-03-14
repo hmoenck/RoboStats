@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def plot_histogramm(data, filename, folder, x_label, y_label, title = None, bins = 30):
-    ''' data is a one-dim array'''
+    ''' data has format (agents/agent_pairs x samples).'''
     plt.figure(figsize = (16, 4))
     N = data.shape[0]
     for i in range(N): 
@@ -19,7 +19,6 @@ def plot_timelines(data, filename, folder, labels, x_label, y_label, title = Non
     ''' timelines has format lines x time '''
     plt.figure(figsize = (16, 4))
     N = data.shape[0]
-    print(labels)
     time = data[0, :]
     for i in range(N-1): 
         plt.subplot(N-1, 1, i+1)
@@ -42,6 +41,7 @@ def plot_boxplot(data, filename, folder, y_label, title = None):
     plt.savefig(folder + filename)
     
 def plot_trajectory(data, filename, folder, agent_names):
+    plt.figure(figsize = (8,8))
     for i, an in enumerate(agent_names):
         plt.plot(data[i*2, :], data[i*2 +1, :], label = an)
     plt.xlabel('x')
@@ -61,7 +61,6 @@ def prepare_data_trajectory(data, agent_names):
 def prepare_data(data, keyword, include_time = False): 
     # data is a pd. dataframe
     cols = [ c for c in data.columns if c.find(keyword)>=0]
-    print(cols)
     data2plot = np.zeros((len(cols), len(data[cols[0]].values)))
     labels = []
     for i, c in enumerate(cols):
