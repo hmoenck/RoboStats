@@ -62,9 +62,9 @@ class timeWindow(QtWidgets.QWidget):
             time.setReadOnly(True)
             time.setText(str(np.round(self.START_STOP[lab +'_time'], 2)))
             
-            # label for time value
-            timelabel = QtWidgets.QLabel(self.time_format)
-            #timelabel = QtWidgets.QLabel('s')
+            # label for time value, all time display is in seconds
+            #timelabel = QtWidgets.QLabel(self.time_format)
+            timelabel = QtWidgets.QLabel('s')
             
             
             # line edit for frame value
@@ -110,17 +110,12 @@ class timeWindow(QtWidgets.QWidget):
         
         # update time display
         time_box  = self.home.findChild(QtWidgets.QLineEdit, senderName + '_time')
-        if self.time_format in ['s', 'ms']:
-            time = np.round(self.TIME[sender.value()], 2)
-        else: 
-            time = self.TIME[sender.value()]
+        time = np.round(self.TIME[sender.value()], 2)
         time_box.setText(str(time))
         
         # update frame display 
         frame_box  = self.home.findChild(QtWidgets.QLineEdit, senderName + '_frame')
         frame_box.setText(str(self.FRAMES[sender.value()]))
-           
-
 
     def on_pushed_ok(self): 
         ''' this function gets called by the OK button. It checks if the selected values are reasonable
@@ -131,9 +126,9 @@ class timeWindow(QtWidgets.QWidget):
             return
         
         # update parent window
-        time_format = self.parentWindow.INFO['info']['time']
-        self.START_STOP['start_time'] = tp.handle_timestamp(self.START_STOP['start_time'], time_format, self.DATE_FORMATS_FILE)
-        self.START_STOP['stop_time'] = tp.handle_timestamp(self.START_STOP['stop_time'], time_format, self.DATE_FORMATS_FILE)
+        #time_format = self.parentWindow.INFO['info']['time']
+        self.START_STOP['start_time'] = tp.handle_timestamp(self.START_STOP['start_time'], 's', self.DATE_FORMATS_FILE)
+        self.START_STOP['stop_time'] = tp.handle_timestamp(self.START_STOP['stop_time'], 's', self.DATE_FORMATS_FILE)
         self.parentWindow.update_dicts(self.parentWindow.INFO, self.START_STOP)
         self.parentWindow.update_labels()
         
