@@ -13,7 +13,6 @@ import sip
 import json
 
 
-
 class subregionWindow(QtWidgets.QWidget):
     ''' '''
 
