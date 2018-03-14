@@ -55,7 +55,7 @@ class subregionWindow(QtWidgets.QWidget):
                 
         for i, x in enumerate(self.Xs): 
             self.mainLayout.addWidget(QtWidgets.QLabel(x), 1, 2 + i)
-            self.mainLayout.addWidget(QtWidgets.QLabel(str(self.superRegion[x])), 2, 2 + i)
+            self.mainLayout.addWidget(QtWidgets.QLabel(str(np.round(self.superRegion[x], 2))), 2, 2 + i)
                     
         self.draw_region_edits()
         
@@ -105,7 +105,7 @@ class subregionWindow(QtWidgets.QWidget):
                 cn.setValidator(QtGui.QDoubleValidator())
                 
                 if 'Subregion' + str(k) in self.subRegions.keys(): # fill with border values if known
-                    cn.setText(str(self.subRegions['Subregion' + str(k)][self.Xs[i]]))
+                    cn.setText(str(np.round(self.subRegions['Subregion' + str(k)][self.Xs[i]], 2)))
                     
                 self.mainLayout.addWidget(cn, k+3, 2+i)
                 self.custom_names.append(cn)
