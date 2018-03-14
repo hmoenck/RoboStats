@@ -320,37 +320,53 @@ class mainWindow(QtWidgets.QMainWindow):
 
             
     def on_load_clicked(self):
-        ''' When the 'Load' Button is clicked, this function passes the filkename to tableWindow. csv parameters are read in from 
-        the respective line edits, and saved to json for further use'''
+        ''' When the 'Load' Button is clicked the data file specified in the line edit nest to the 
+        Browse Buttonis loaded for further processing. If view is checked this is done via the display 
+        in table window. Else the loading is done internally. In any case csv parameters are read from 
+        the respective line edits in mainWindow and and saved to json for further use.'''
        
+        # check if file was selected
         if len(self.selectedFile.text()) == 0: 
             messages.send_warning('No File loaded')
             return
-            
+        
+        # read csv parameters and save to json    
         csv_dict = json.load(open(self.CSV_INFO_FILE))
         csv_dict['read']['delim'] = self.setDelim.text()
         csv_dict['read']['skip_rows'] = int(self.setSkipRows.text())
         
         with open(self.CSV_INFO_FILE, 'w') as fp:
             json.dump(csv_dict, fp)
-            
+        
+        # if view is checked open tableWindow    
         if self.openInView.checkState() == 2:    
             self.table = tableWindow(self, self.INFO['data_file'])
             self.table.show()        
         
         else: 
+        #------------------------------------------------------------------------------------------- 
+        # in this section the file is loaded using settings from previous uses. The procedure is 
+        # similar to tableWindow's build_csv()-function.
+        #------------------------------------------------------------------------------------- -----
+            # use column labels from previos session
             columns = json.load(open(self.PARAM_INFO_FILE))
             time_labels = columns['time_labels']
             agent_names = columns['agent_names']
             agent_specs = columns['agent_specifications']
             other = columns['other']
             
-            df = pd.read_csv(self.selectedFile.text(), 
-                            header = 0, 
-                            sep = csv_dict['read']['delim'], 
-                            skiprows = csv_dict['read']['skip_rows'], 
-                            comment = csv_dict['read']['comment'])
-            
+            # use csv params from mainWindow to load selected csv into pandas
+            try:
+                df = pd.read_csv(self.selectedFile.text(), 
+                                header = 0, 
+                                sep = csv_dict['read']['delim'], 
+                                skiprows = csv_dict['read']['skip_rows'], 
+                                comment = csv_dict['read']['comment'])
+            except ValueError: 
+            messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
+            return
+                
+            # define columns 
             df_columns = {
             'TIME': {time_labels[i] : columns[time_labels[i]] for i in range(len(time_labels))}, 
             'AGENTS': {}, 
@@ -361,6 +377,7 @@ class mainWindow(QtWidgets.QMainWindow):
                     key = agent_names[k]+agent_specs[j]    
                     df_columns['AGENTS'][key] = columns[key]
             
+            # read the indices and names of columns of interest into a list
             real_indices = []
             titles = []
             for key1 in df_columns.keys(): 
@@ -368,29 +385,36 @@ class mainWindow(QtWidgets.QMainWindow):
                     titles.append(key2)
                     real_indices.append(int(df_columns[key1][key2])-1)
 
+            # try to select the columns of interest in the loaded pandas
             try:
                 df_new = df.iloc[:, real_indices]
             except IndexError: 
                 messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return
-                
+            
+            # check for NaN values and delete the respective rows    
             df_new.columns = titles
             df_new = df_new.dropna(how = 'any') 
+            
+            # save pandas to temporary csv file 
             df_new.to_csv(self.TMP_FILE, sep = csv_dict['write']['delim'])
             print('temporary file saved to', self.TMP_FILE)
             
+            # perform basic_stats i.e convert time to seconds and calc speed and dist 
             self.INFO['agent_names'] = agent_names
             try: 
                 basic_stats.speed_and_dist(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE, self.PARAM_INFO_FILE)
             except TypeError: 
                 messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return 
-                
+            
+            # init the display of mainWindow and self.INFO with values read from datafile   
             self.INFO['info'] = columns['info']
             if self.init_Info(self.TMP_FILE) == False:
                 messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return
             
+            # save the state of the view button
             options = json.load(open(self.OPTIONS_INFO_FILE))
             options['view'] = self.openInView.checkState()
             with open(self.OPTIONS_INFO_FILE, 'w') as fp:
