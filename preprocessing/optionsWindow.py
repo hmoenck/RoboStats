@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from PyQt5 import QtCore
+from PyQt5.QtGui import QFont   
 import json
 
 
@@ -13,6 +13,7 @@ class optionsWindow(QtWidgets.QWidget):
         #super(optionsWindow, self).__init__(parent)
         self.parentWindow = parentWindow
         self.optionsFile = parentWindow.OPTIONS_INFO_FILE
+        self.setFixedSize(300,200)
         #self.optionsFile = optionsFile
         self.home()
         
@@ -25,14 +26,14 @@ class optionsWindow(QtWidgets.QWidget):
         self.tab1 = QtWidgets.QWidget()	
         self.tab2 = QtWidgets.QWidget()
         self.tab3 = QtWidgets.QWidget()
-        self.tab4 = QtWidgets.QWidget()
+        #self.tab4 = QtWidgets.QWidget()
         self.tabs.resize(300,200) 
  
         # Add tabs
         self.tabs.addTab(self.tab1,"Plots")
         self.tabs.addTab(self.tab2,"Folders")
-        self.tabs.addTab(self.tab3, "Statistics")
-        self.tabs.addTab(self.tab4, "Reset")
+        self.tabs.addTab(self.tab3, "Transfer Entropy")
+        #self.tabs.addTab(self.tab4, "Subregions")
  
         #--------------------------------------------------------------------
         # Plot Tab
@@ -85,17 +86,33 @@ class optionsWindow(QtWidgets.QWidget):
         #--------------------------------------------------------------------
         self.Tab2layout = QtWidgets.QGridLayout()
         
+        bold_font = QFont('Helvetica', 10, QFont.Bold)
         self.DataSourceLabel = QtWidgets.QLabel('Data Folder:')
+        self.DataSourceLabel.setFont(bold_font)
         self.DataSource = QtWidgets.QLabel(options['data_folder'])
         
         self.SaveFolderLabel = QtWidgets.QLabel('Save Folder:')
+        self.SaveFolderLabel.setFont(bold_font)
         self.SaveFolder = QtWidgets.QLabel(options['save_folder'])
+        
+        self.SaveStatsLabel = QtWidgets.QLabel('Statistcis File:')
+        self.SaveStatsLabel.setFont(bold_font)
+        self.SaveStats = QtWidgets.QLabel(options['info_file'])
+        
+        self.SaveTimeLabel = QtWidgets.QLabel('Timeline File:')
+        self.SaveTimeLabel.setFont(bold_font)
+        self.SaveTime = QtWidgets.QLabel(options['timeline_file'])
         
         
         self.Tab2layout.addWidget(self.DataSourceLabel, 0, 0)
         self.Tab2layout.addWidget(self.DataSource, 0, 1)        
         self.Tab2layout.addWidget(self.SaveFolderLabel, 1, 0)        
         self.Tab2layout.addWidget(self.SaveFolder, 1, 1)
+        self.Tab2layout.addWidget(self.SaveStatsLabel, 2, 0)        
+        self.Tab2layout.addWidget(self.SaveStats, 2, 1)
+        self.Tab2layout.addWidget(self.SaveTimeLabel, 3, 0)        
+        self.Tab2layout.addWidget(self.SaveTime, 3, 1)
+        
         
         self.tab2.setLayout(self.Tab2layout)
         
@@ -106,8 +123,13 @@ class optionsWindow(QtWidgets.QWidget):
         self.Tab3layout = QtWidgets.QGridLayout()
         
         self.checkTE = QtWidgets.QCheckBox('Transfer Entropy')
+        self.checkTE.setCheckState(options['TE'])
+        self.checkTE.toggled.connect(self.selectTE)
+        self.explainTE = QtWidgets.QLabel("If enabled the Transfer Entropy (TE) between two agent's velocity vectors will be calculated. For reliabale results make sure that only two agents are selcted and sufficintly many datapoints are available. Results include TE.csv containing a TE values for different lag-times and directions (Information flow from agent 1 to agent 2 as well as from agent 2 to agent 1)  as well as a plot. Calculation uses entropy estimators by Greg Ver Steeg (http://www.isi.edu/~gregv/npeet.html). ")
+        self.explainTE.setWordWrap(True)
         
         self.Tab3layout.addWidget(self.checkTE, 0, 0)
+        self.Tab3layout.addWidget(self.explainTE, 1, 0, 3 ,1)
 
         
         self.tab3.setLayout(self.Tab3layout)
@@ -116,16 +138,23 @@ class optionsWindow(QtWidgets.QWidget):
         #--------------------------------------------------------------------
         # Reset Tab
         #--------------------------------------------------------------------
-        self.Tab4layout = QtWidgets.QVBoxLayout()
-        
-        self.resetInfo = QtWidgets.QLabel('sdfghjklöäökhfd')
-        self.resetButton = QtWidgets.QPushButton('Reset all')
-        
-        self.Tab4layout.addWidget(self.resetInfo)
-        self.Tab4layout.addWidget(self.resetButton)
+#        self.Tab4layout = QtWidgets.QVBoxLayout()
+#        
+#        model = QtWidgets.QStandardItemModel()
+#        model.setHorizontalHeaderLabels(['Name', 'Age', 'Sex', 'Add'])
+#        table = QtWidgets.QTableView()
+#        table.setModel(model)
+#        
+#        self.Tab4layout.addWidget(table)
+#        
+##        self.resetInfo = QtWidgets.QLabel('sdfghjklöäökhfd')
+##        self.resetButton = QtWidgets.QPushButton('Reset all')
+##        
+##        self.Tab4layout.addWidget(self.resetInfo)
+##        self.Tab4layout.addWidget(self.resetButton)
 
-        
-        self.tab4.setLayout(self.Tab4layout)
+#        
+#        self.tab4.setLayout(self.Tab4layout)
         
         
 
@@ -176,7 +205,12 @@ class optionsWindow(QtWidgets.QWidget):
         
         else: 
             pass
-
+    
+    def selectTE(self): 
+        options = json.load(open(self.optionsFile))
+        options['TE'] = self.checkTE.checkState()
+        with open(self.optionsFile, 'w') as of: 
+            json.dump(options, of)
         
 
 #if __name__ == "__main__":
