@@ -16,11 +16,13 @@ from tableWindow import tableWindow
 from timeWindow import timeWindow
 from plotWindow import plotWindow
 from optionsWindow import optionsWindow
+from subregionWindow import subregionWindow
 import data_processing.smoothing as smoothing
 import data_processing.basic_stats as basic_stats
 import data_processing.time_parsers as tp
 import data_processing.generate_stats_file as genStats
 import data_processing.generate_data2plot as genPlotData
+import stats.TE as TE
 import json
 import messages 
 
@@ -35,6 +37,8 @@ class mainWindow(QtWidgets.QMainWindow):
 
     INFO = {'start_time': -1, 'start_frame': -1, 'stop_time': -1, 'stop_frame': -1, 'duration_time': -1, 'duration_frame':-1,
             'x_min': -1, 'x_max': -1, 'y_min': -1, 'y_max': -1, 'filtered': False}
+            
+    WORLD_BORDERS= ['x_min', 'x_max', 'y_min', 'y_max']
     
     SMOOTHING = ['Select Filter', 'MedFilter, k=5']
     STATS_OPTIONS = ['Simple', 'Fancy']
@@ -48,6 +52,7 @@ class mainWindow(QtWidgets.QMainWindow):
         PARAM_INFO_FILE = 'settings/dict_data.json'
         DATE_FORMATS_FILE = 'settings/date_formats.json'
         OPTIONS_INFO_FILE = 'settings/options.json'
+        SUBREGIONS_INFO_FILE = 'settings/subregions.json'
         options = json.load(open(OPTIONS_INFO_FILE))
         
     except FileNotFoundError:
@@ -56,6 +61,7 @@ class mainWindow(QtWidgets.QMainWindow):
         PARAM_INFO_FILE = twoFoldersup + 'settings/dict_data.json'
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
         OPTIONS_INFO_FILE = twoFoldersup + 'settings/options.json'
+        SUBREGIONS_INFO_FILE = twoFoldersup + 'settings/subregions.json'
     
     options = json.load(open(OPTIONS_INFO_FILE))
     TMP_FILE = options['tmp_file']
@@ -161,11 +167,11 @@ class mainWindow(QtWidgets.QMainWindow):
         self.spaceTitle.setFont(self.titleFont)
         self.spaceLayout.addWidget(self.spaceTitle, 0, 0)
         
-        borders = ['x_min', 'x_max', 'y_min', 'y_max']
+        
 
         self.Border_sizes = {}
         
-        for j, b in enumerate(borders):   
+        for j, b in enumerate(self.WORLD_BORDERS):   
             border = QtWidgets.QLabel( b + ':')
             border_size = QtWidgets.QLabel('----')
             border_size.setObjectName(b)
@@ -173,11 +179,15 @@ class mainWindow(QtWidgets.QMainWindow):
             self.spaceLayout.addWidget(border_size, np.floor(j /2.)+1, (j%2)*2+1)
             self.Border_sizes[b] = border_size
             
+        self.addSubregionsButton = QtWidgets.QPushButton('Add Subregions')
+        self.addSubregionsButton.clicked.connect(self.addSubregions)
+        self.addSubregionsButton.setToolTip('Click to add subregions for further analysis')
+        self.spaceLayout.addWidget(self.addSubregionsButton, np.ceil(len(self.WORLD_BORDERS)), 2)
+
         self.changeCoordsButton = QtWidgets.QPushButton('Change')
         self.changeCoordsButton.clicked.connect(self.changeCoords)
         self.changeCoordsButton.setToolTip('Click to change borders of the analyzed region')
-
-        self.spaceLayout.addWidget(self.changeCoordsButton, np.ceil(len(borders)), 4)
+        self.spaceLayout.addWidget(self.changeCoordsButton, np.ceil(len(self.WORLD_BORDERS)), 3)
         
         
         #------------------------------------------------------------
@@ -205,9 +215,8 @@ class mainWindow(QtWidgets.QMainWindow):
         #------------------------------------------------------------
 
         self.plotLayout = QtWidgets.QGridLayout()
-        self.TYPES = ['Select', 'Trajectory', 'Timeline', 'Histogramm', 'Boxplot']
-        self.SPECS = {'Select': ['-------'], 'Trajectory': ['--------'], 'Timeline': ['Speed', 'Distance', 'Angle'], 
-    'Histogramm': ['Speed', 'Distance', 'Angle'] , 'Boxplot': ['Speed', 'Distance']}
+        self.TYPES = ['Select', 'Trajectory', 'Heatmap', 'Timeline', 'Histogramm', 'Boxplot']
+        self.SPECS = {'Select': ['-------'], 'Trajectory': ['--------'], 'Heatmap': ['--------'], 'Timeline': ['Speed', 'Distance', 'Angle'], 'Histogramm': ['Speed', 'Distance', 'Angle'] , 'Boxplot': ['Speed', 'Distance']}
         
         self.plotTitle = QtWidgets.QLabel('Inspect Data')
         self.plotTitle.setFont(self.titleFont)
@@ -352,7 +361,6 @@ class mainWindow(QtWidgets.QMainWindow):
                     key = agent_names[k]+agent_specs[j]    
                     df_columns['AGENTS'][key] = columns[key]
             
-            print(df_columns)
             real_indices = []
             titles = []
             for key1 in df_columns.keys(): 
@@ -360,7 +368,12 @@ class mainWindow(QtWidgets.QMainWindow):
                     titles.append(key2)
                     real_indices.append(int(df_columns[key1][key2])-1)
 
-            df_new = df.iloc[:, real_indices]
+            try:
+                df_new = df.iloc[:, real_indices]
+            except IndexError: 
+                messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
+                return
+                
             df_new.columns = titles
             df_new = df_new.dropna(how = 'any') 
             df_new.to_csv(self.TMP_FILE, sep = csv_dict['write']['delim'])
@@ -469,8 +482,8 @@ class mainWindow(QtWidgets.QMainWindow):
         t = df['seconds'].values
         f = df['frames'].values
         
-        self.time = timeWindow(self, t, f, self.INFO)
-        self.time.show()   
+        self.tW = timeWindow(self, t, f, self.INFO)
+        self.tW.show()   
         
     def changeCoords(self):
         ''' when the 'Change'Button is clicked on the space Layout, this function changes the labels for x and y borders 
@@ -481,7 +494,6 @@ class mainWindow(QtWidgets.QMainWindow):
             messages.send_warning('No File loaded')
             return
      
-        borders = ['x_min', 'x_max', 'y_min', 'y_max']
         for key in self.Border_sizes: 
             self.INFO[key] = np.round(float(self.Border_sizes[key].text()), 2)
             self.spaceLayout.removeWidget(self.Border_sizes[key])
@@ -491,7 +503,7 @@ class mainWindow(QtWidgets.QMainWindow):
         
         if self.changeCoordsButton.text() == 'Change':
         
-            for i, b in enumerate(borders): 
+            for i, b in enumerate(self.WORLD_BORDERS): 
                 le = QtWidgets.QLineEdit(str(self.INFO[b]))
                 le.setValidator(QtGui.QDoubleValidator())
                 self.Border_sizes[b] = le
@@ -500,12 +512,26 @@ class mainWindow(QtWidgets.QMainWindow):
             
         elif self.changeCoordsButton.text() == 'Ok':
         
-            for i, b in enumerate(borders): 
+            for i, b in enumerate(self.WORLD_BORDERS): 
                 l = QtWidgets.QLabel(str(self.INFO[b]))
                 self.Border_sizes[b] = l
                 self.spaceLayout.addWidget(l, np.floor(i /2.) +1, (i%2)*2+1)
             self.changeCoordsButton.setText('Change')
 
+
+    def addSubregions(self): 
+        if self.DataLoaded == False: 
+            messages.send_warning('No File loaded')
+            return
+         
+        else: 
+            world_borders = {}
+            for wb in self.WORLD_BORDERS:
+                world_borders[wb] = self.INFO[wb]
+                
+            self.srW = subregionWindow(self, world_borders, self.SUBREGIONS_INFO_FILE)
+            self.srW.show()   
+                
 
     def update_dicts(self, dict1, dict2): 
         ''' updates the values of one dictionary with the values of another, gets called by tableWindow'''
@@ -612,6 +638,11 @@ class mainWindow(QtWidgets.QMainWindow):
 
             plot_instructions = options['plot_selection']
             pf.plot_things(df, results_folder, self.INFO['agent_names'], plot_instructions)
+            
+            
+            # TE part: 
+            if options['TE']: 
+                TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg')
             
 #            from scipy.stats import spearmanr
 #            from scipy.stats import pearsonr
