@@ -70,7 +70,14 @@ class mainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent = None):
         super(mainWindow, self).__init__(parent)
-        self.setFixedSize(650,600)
+        self.setFixedSize(650,600)  
+        
+#        self.statusBar().showMessage('Ready')
+#        self.progressBar = QtWidgets.QProgressBar()
+        
+
+        
+        
         self.home()
 
     def home(self): 
@@ -363,8 +370,8 @@ class mainWindow(QtWidgets.QMainWindow):
                                 skiprows = csv_dict['read']['skip_rows'], 
                                 comment = csv_dict['read']['comment'])
             except ValueError: 
-            messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
-            return
+                messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
+                return
                 
             # define columns 
             df_columns = {
@@ -437,9 +444,6 @@ class mainWindow(QtWidgets.QMainWindow):
         
         self.INFO['start_time'] = df['seconds'].values[0]    
         self.INFO['stop_time'] = df['seconds'].values[-1]
-        
-#        self.INFO['start_time'] = tp.handle_timestamp(df['time'].values[0], time_format, self.DATE_FORMATS_FILE)
-#        self.INFO['stop_time'] = tp.handle_timestamp(df['time'].values[-1], time_format, self.DATE_FORMATS_FILE)
         
         self.INFO['start_frame'] = df['frames'].values[0]
         self.INFO['stop_frame'] = df['frames'].values[-1]
@@ -590,70 +594,117 @@ class mainWindow(QtWidgets.QMainWindow):
         if self.DataLoaded == False: 
             messages.send_warning('No File loaded')
             return
+        
+        # This is simply to show the bar
+#        self.progressBar.setGeometry(30, 40, 200, 25)
+#        self.progressBar.setValue(0)
+#        self.statusBar().addPermanentWidget(self.progressBar)    
+        #-------------------------------------------------------------------------------------------
+        # saving preparation section
+        #-------------------------------------------------------------------------------------------   
+        options = json.load(open(self.OPTIONS_INFO_FILE))
+        
+        # read prefered save folder from options file, default is HOME
+        save_folder = options['save_folder']
+        if len(save_folder) == 0: 
+            save_folder = os.getenv("HOME")
+        
+        # open prefered save folder (or HOME) and let user confirm
+        results_folder_super = \
+             str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", save_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+        options['save_folder'] = results_folder_super
+        
+        # save new prefered save folder
+        with open(self.OPTIONS_INFO_FILE, 'w') as of: 
+            json.dump(options, of)
+        
+        # create results folder within save folder 
+        results_folder = self.makeResultsDir(results_folder_super + '/')
+        
+        # read parameters for saving from options file
+        csv_dict = json.load(open(self.CSV_INFO_FILE))
+        delim = csv_dict['write']['delim']
+        time_file = options['timeline_file']
+        
+        #self.progressBar.setValue(10)
+        #-------------------------------------------------------------------------------------------
+        # create timelines.csv and info.csv
+        #------------------------------------------------------------------------------------------- 
+        
+        # cut data dataframe according to current time and space settings
+        df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)   
+        
+        # sort the columns of dataframe
+        indiv_stats = ['_vx', '_vy', '_speed']
+        coll_stats = ['_dist']
+        time = ['frames', 'time', 'seconds']
+        agents = self.INFO['agent_names']
+        specs = ['_x', '_y', '_angle']
 
-        if False: 
-            pass
-        else:
-            df = basic_stats.cut_timelines(self.TMP_FILE, self.INFO, self.CSV_INFO_FILE)   
-            
-            indiv_stats = ['_vx', '_vy', '_speed']
-            coll_stats = ['_dist']
-            
-            time = ['frames', 'time', 'seconds']
-            agents = self.INFO['agent_names']
-            specs = ['_x', '_y', '_angle']
+        cols = df.columns
+        new_order = []
+        for t in time: 
+            new_order.append(t)
 
-            cols = df.columns
-            new_order = []
-            for t in time: 
-                new_order.append(t)
+        for a in agents: 
+            for sp in specs: 
+                new_order.append(a + sp)
+            for in_st in indiv_stats: 
+                new_order.append(a + in_st)
+        for c in coll_stats: 
+            for col in cols: 
+                if col.find(c) > 0: 
+                    new_order.append(col)
 
-            for a in agents: 
-                for sp in specs: 
-                    new_order.append(a + sp)
-                for in_st in indiv_stats: 
-                    new_order.append(a + in_st)
-            for c in coll_stats: 
-                for col in cols: 
-                    if col.find(c) > 0: 
-                        new_order.append(col)
+        df = df.reindex(new_order, axis = 1)
 
-            df = df.reindex(new_order, axis = 1)
-            
-            options = json.load(open(self.OPTIONS_INFO_FILE))
-            save_folder = options['save_folder']
-            if len(save_folder) == 0: 
-                save_folder = os.getenv("HOME")
-            
-            results_folder_super = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", save_folder, QtWidgets.QFileDialog.ShowDirsOnly))
-            options['save_folder'] = results_folder_super
-            
-            with open(self.OPTIONS_INFO_FILE, 'w') as of: 
-                json.dump(options, of)
-            
+        # save ordered dataframe and create info.csv
+        df.to_csv(results_folder + '/' + time_file, sep = delim)   
+        
+        #genStats.makeFile(results_folder, results_folder + '/' + time_file, self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
+        genStats.makeFile(results_folder, df, self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
+        
+        #self.progressBar.setValue(20)
+        #-------------------------------------------------------------------------------------------
+        # plotting section
+        #------------------------------------------------------------------------------------------- 
+        plot_instructions = options['plot_selection']
+        pf.plot_things(df, results_folder, self.INFO['agent_names'], plot_instructions)
 
-            results_folder = self.makeResultsDir(results_folder_super + '/')
+        #self.progressBar.setValue(30)
+        #-------------------------------------------------------------------------------------------
+        # TE section
+        #-------------------------------------------------------------------------------------------
+        if options['TE']: 
+            TE_done = TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg')
             
-            csv_dict = json.load(open(self.CSV_INFO_FILE))
-            delim = csv_dict['write']['delim']
+        #self.progressBar.setValue(70)
+        #-------------------------------------------------------------------------------------------
+        # Subregions section
+        #-------------------------------------------------------------------------------------------
+        subregions = json.load(open(self.SUBREGIONS_INFO_FILE))
+        sub_info = {'start_frame':self.INFO['start_frame'], 'stop_frame':self.INFO['stop_frame'],\
+                    'start_time':self.INFO['start_time'], 'stop_time':self.INFO['stop_time'],\
+                    'agent_names':self.INFO['agent_names'], 'data_file':self.INFO['data_file'], 'filtered':self.INFO['filtered']}
+        
+        for sub in subregions.keys():
+            for wb in self.WORLD_BORDERS:
+                sub_info[wb] = subregions[sub][wb]
             
-            options = json.load(open(self.OPTIONS_INFO_FILE))
+            sub_df = basic_stats.cut_timelines(self.TMP_FILE, sub_info, self.CSV_INFO_FILE) 
             
-            time_file = options['timeline_file']
+            genStats.makeFile(os.getcwd(), sub_df, sub_info, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE, region = sub)
             
-            df.to_csv(results_folder + '/' + time_file, sep = delim)   
-            genStats.makeFile(results_folder, results_folder + '/' + time_file, self.INFO, self.CSV_INFO_FILE, self.OPTIONS_INFO_FILE)
-
-            # plot part 
-
-            plot_instructions = options['plot_selection']
-            pf.plot_things(df, results_folder, self.INFO['agent_names'], plot_instructions)
+            info1 = pd.read_csv(results_folder + '/info.csv')
+            info2 = pd.read_csv('info.csv')
+            infofiles = [info1, info2]
+            combined = pd.concat(infofiles)
+            combined = combined[info1.columns]
+            combined = combined.dropna(axis=1)
+            combined.to_csv(results_folder + '/info.csv')
             
-            
-            # TE part: 
-            if options['TE']: 
-                TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg')
-            
+        #self.progressBar.setValue(100)
+        
 #            from scipy.stats import spearmanr
 #            from scipy.stats import pearsonr
 #            for i in range(len(self.INFO['agent_names'])): 
@@ -670,7 +721,7 @@ class mainWindow(QtWidgets.QMainWindow):
 #                    
 #                    print('Pearson x: ', pearsonr(df[a0 + '_x'].values, df[a1 + '_x'].values))     
 #                    print('Np.Corr x: ', np.correlate(df[a0 + '_x'].values, df[a1 + '_x'].values))   
-            messages.send_goodbye(self, results_folder)
+        messages.send_goodbye(self, results_folder)
 
         
         
