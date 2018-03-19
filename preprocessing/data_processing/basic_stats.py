@@ -3,7 +3,7 @@ import pandas as pd
 from collections import Counter
 import json
 from scipy.stats import mode
-import stats.simple as simple
+import analysis_tools.simple as simple
 
 
 def speed_and_dist(filename, info, csv_info_file, param_info_file): 
