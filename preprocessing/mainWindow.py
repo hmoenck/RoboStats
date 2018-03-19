@@ -606,7 +606,8 @@ class mainWindow(QtWidgets.QMainWindow):
         #-------------------------------------------------------------------------------------------   
         
         #check if subregions are in agreement with current world_borders
-        self.checkSubregions()
+        if self.checkSubregions() == False: 
+            return
 
         
         options = json.load(open(self.OPTIONS_INFO_FILE))
@@ -633,7 +634,6 @@ class mainWindow(QtWidgets.QMainWindow):
         delim = csv_dict['write']['delim']
         time_file = options['timeline_file']
         
-        #self.progressBar.setValue(10)
         #-------------------------------------------------------------------------------------------
         # create timelines.csv and info.csv
         #------------------------------------------------------------------------------------------- 
@@ -683,9 +683,12 @@ class mainWindow(QtWidgets.QMainWindow):
         # TE section
         #-------------------------------------------------------------------------------------------
         if options['TE']: 
-            te_params = json.load(open(self.TE_PARAMS_FILE))
-            
-            TE_done = TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg', start_frame = te_params['start_frame'], maxtime = te_params['max_time'], k_te = te_params['k_te'], frame_step = te_params['frame_step'])
+            if len(self.INFO['agent_names'])  == 2: 
+                te_params = json.load(open(self.TE_PARAMS_FILE))
+                
+                TE_done = TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg', start_frame = te_params['start_frame'], maxtime = te_params['max_time'], k_te = te_params['k_te'], frame_step = te_params['frame_step'])
+            else: 
+                messages.send_warning('Cannot calculate transfer entropy for agent number other than 2.')
             
         #self.progressBar.setValue(70)
         #-------------------------------------------------------------------------------------------
@@ -768,12 +771,12 @@ class mainWindow(QtWidgets.QMainWindow):
             for wb in self.WORLD_BORDERS:
                 if (wb.find('min') > -1) and (subregions[sub][wb] < self.INFO[wb]): 
                     messages.send_warning('Currently selcted Subregions exceed world borders')
-                    return
+                    return False
                 elif (wb.find('max') > -1) and (subregions[sub][wb] > self.INFO[wb]): 
                     messages.send_warning('Currently selcted Subregions exceed world borders')
-                    return
+                    return False
                 else: 
-                    pass
+                    return True
 
         
     def makeResultsDir(self, base_folder):
