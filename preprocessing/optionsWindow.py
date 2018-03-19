@@ -1,8 +1,14 @@
 import sys
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QFont   
+from PyQt5 import QtGui 
 import json
+import os
 
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+import messages
 
 class optionsWindow(QtWidgets.QWidget): 
 
@@ -14,6 +20,7 @@ class optionsWindow(QtWidgets.QWidget):
         self.parentWindow = parentWindow
         self.optionsFile = parentWindow.OPTIONS_INFO_FILE
         self.setFixedSize(300,200)
+        self.TE_PARAMS_FILE = self.parentWindow.TE_PARAMS_FILE
         #self.optionsFile = optionsFile
         self.home()
         
@@ -125,36 +132,30 @@ class optionsWindow(QtWidgets.QWidget):
         self.checkTE = QtWidgets.QCheckBox('Transfer Entropy')
         self.checkTE.setCheckState(options['TE'])
         self.checkTE.toggled.connect(self.selectTE)
-        self.explainTE = QtWidgets.QLabel("If enabled the Transfer Entropy (TE) between two agent's velocity vectors will be calculated. For reliabale results make sure that only two agents are selcted and sufficintly many datapoints are available. Results include TE.csv containing a TE values for different lag-times and directions (Information flow from agent 1 to agent 2 as well as from agent 2 to agent 1)  as well as a plot. Calculation uses entropy estimators by Greg Ver Steeg (http://www.isi.edu/~gregv/npeet.html). ")
-        self.explainTE.setWordWrap(True)
+        
+        self.TE_info = QtWidgets.QPushButton('Info')
+        self.TE_info.clicked.connect(self.display_TE_Info)
+
+
+        self.paramLabel = QtWidgets.QLabel('Note: Calculating transfer entropy is computationally\nexpensive and may take several seconds!')
+       
+        self.okTEButton = QtWidgets.QPushButton('OK')
+        self.okTEButton.clicked.connect(self.TE_ok_pressed)
+        self.resetButton = QtWidgets.QPushButton('Reset')
+        self.resetButton.clicked.connect(self.TE_reset_pressed)
         
         self.Tab3layout.addWidget(self.checkTE, 0, 0)
-        self.Tab3layout.addWidget(self.explainTE, 1, 0, 3 ,1)
-
+        self.Tab3layout.addWidget(self.TE_info, 0, 5)
+        self.Tab3layout.addWidget(self.paramLabel, 2, 0)
         
+        self.init_TE_params()
+        
+        self.Tab3layout.addWidget(self.resetButton, 7, 4)
+        self.Tab3layout.addWidget(self.okTEButton, 7, 5)
+
+
         self.tab3.setLayout(self.Tab3layout)
-        
-        
-        #--------------------------------------------------------------------
-        # Reset Tab
-        #--------------------------------------------------------------------
-#        self.Tab4layout = QtWidgets.QVBoxLayout()
-#        
-#        model = QtWidgets.QStandardItemModel()
-#        model.setHorizontalHeaderLabels(['Name', 'Age', 'Sex', 'Add'])
-#        table = QtWidgets.QTableView()
-#        table.setModel(model)
-#        
-#        self.Tab4layout.addWidget(table)
-#        
-##        self.resetInfo = QtWidgets.QLabel('sdfghjklöäökhfd')
-##        self.resetButton = QtWidgets.QPushButton('Reset all')
-##        
-##        self.Tab4layout.addWidget(self.resetInfo)
-##        self.Tab4layout.addWidget(self.resetButton)
 
-#        
-#        self.tab4.setLayout(self.Tab4layout)
         
         
 
@@ -164,6 +165,7 @@ class optionsWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.tabs)
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.layout)
+        self.home.setFont(self.parentWindow.normalFont)
         self.home.show()
     
         
@@ -184,15 +186,16 @@ class optionsWindow(QtWidgets.QWidget):
        
         with open(self.optionsFile, 'w') as of: 
             json.dump(options, of)
+
             
     def clicked_list(self): 
         ''' If the list widget is clicked for individual selection, both checkboxes will be unchecked'''
         self.checkAll.setCheckState(0) 
         self.checkNone.setCheckState(0)
-    
+        
+            
     def clicked_checkBox(self): 
         ''' Selecting the all or none Checkbox will either select or deselect all list items.'''
-
         if self.sender().text() == 'all': 
             self.checkAll.setCheckState(2) 
             self.checkNone.setCheckState(0)
@@ -204,15 +207,74 @@ class optionsWindow(QtWidgets.QWidget):
             self.listWidget.clearSelection()
         
         else: 
+    
             pass
+            
+    def init_TE_params(self): 
+    
+        self.TE_lineEdits = []
+        labels = ['Start Frame', 'Frame Step', 'Max Time', 'K']
+        names = ['start_frame', 'frame_step', 'max_time', 'k_te']
+        toolTips = ['Frame to take as starting point for calculation', 'Stepsize for downsampling.\nE.g. if Frame Step = 3 only every third frame is considered for calculation.\nFor large datasets this may speed up calculation', 'Maximum time lag in seconds.', 'Length of vectors'
+        ]
+        te_params = json.load(open(self.TE_PARAMS_FILE))
+
+        
+        for i in range(len(names)): 
+            label = QtWidgets.QLabel(labels[i])
+            label.setToolTip(toolTips[i])
+            le = QtWidgets.QLineEdit(str(te_params[names[i]]))
+            le.setObjectName(names[i])
+            le.setFixedWidth(70)
+            le.setValidator(QtGui.QDoubleValidator())
+            
+            self.TE_lineEdits.append(le)
+            
+            self.Tab3layout.addWidget(label, 3 +i, 0, 1, 1)
+            self.Tab3layout.addWidget(le, 3 +i, 1, 1, 1)
+
+               
+    def TE_ok_pressed(self):
+        '''saved the user specific TE values to dictionary'''   
+        te_params = json.load(open(self.TE_PARAMS_FILE))
+        for le in self.TE_lineEdits: 
+            try: 
+                float(le.text())
+            except ValueError: 
+                messages.send_warning('Parameter fields can not be empty!')
+            te_params[le.objectName()] = le.text()
+        
+        print(te_params)
+        
+        with open(self.TE_PARAMS_FILE, 'w') as tf: 
+            json.dump(te_params, tf)
+            
+        
+    def TE_reset_pressed(self):
+        '''Writes the default values for TE to the respective line edit elements '''   
+        te_params = json.load(open(self.TE_PARAMS_FILE))
+        te_reset = te_params['reset']
+        
+        for key in enumerate(te_reset.keys()): 
+            te_params[key[1]] = te_reset[key[1]]#child = self.home.findChild(QtWidgets.QLineEdit, subreg + x)
+            le = self.tab3.findChild(QtWidgets.QLineEdit, key[1])
+            le.setText(str(te_reset[key[1]]))
+
+        with open(self.TE_PARAMS_FILE, 'w') as tf: 
+            json.dump(te_params, tf)
+    
     
     def selectTE(self): 
         options = json.load(open(self.optionsFile))
         options['TE'] = self.checkTE.checkState()
         with open(self.optionsFile, 'w') as of: 
             json.dump(options, of)
-        
 
+    def display_TE_Info(self):        
+#            self.explainTE = QtWidgets.QLabel("If enabled the Transfer Entropy (TE) between two agent's velocity vectors will be calculated. For reliabale results make sure that only two agents are selcted and sufficintly many datapoints are available. Results include TE.csv containing a TE values for different lag-times and directions (Information flow from agent 1 to agent 2 as well as from agent 2 to agent 1)  as well as a plot. Calculation uses entropy estimators by Greg Ver Steeg (http://www.isi.edu/~gregv/npeet.html). ")
+#        self.explainTE.setWordWrap(True)
+        text = "If enabled the Transfer Entropy (TE) between two agent's velocity vectors will be calculated. For reliabale results make sure that only two agents are selcted and sufficintly many datapoints are available. Results include TE.csv containing a TE values for different lag-times and directions (Information flow from agent 1 to agent 2 as well as from agent 2 to agent 1)  as well as a plot. Calculation uses entropy estimators by Greg Ver Steeg (http://www.isi.edu/~gregv/npeet.html). "
+        messages.send_info(text)
 #if __name__ == "__main__":
 #    import sys
 #    import numpy as np
