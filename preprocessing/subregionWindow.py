@@ -31,6 +31,7 @@ class subregionWindow(QtWidgets.QWidget):
         self.custom_names = [] # holds the line edit elements for entering new borders
     
         super(subregionWindow, self).__init__(parentWindow)
+        self.parentWindow = parentWindow
 
         self.home()
         
@@ -62,6 +63,7 @@ class subregionWindow(QtWidgets.QWidget):
         self.home = QtWidgets.QWidget()
         self.home.setLayout(self.mainLayout)
         #self.home.setFont(self.parentWindow.normalFont)
+        self.home.setFont(self.parentWindow.normalFont)
         self.home.show()
         
         
