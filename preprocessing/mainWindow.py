@@ -22,7 +22,7 @@ import data_processing.basic_stats as basic_stats
 import data_processing.time_parsers as tp
 import data_processing.generate_stats_file as genStats
 import data_processing.generate_data2plot as genPlotData
-import stats.TE as TE
+import analysis_tools.TE as TE
 import json
 import messages 
 
@@ -347,6 +347,14 @@ class mainWindow(QtWidgets.QMainWindow):
         with open(self.CSV_INFO_FILE, 'w') as fp:
             json.dump(csv_dict, fp)
         
+        # save the state of the view button
+        options = json.load(open(self.OPTIONS_INFO_FILE))
+        options['view'] = self.openInView.checkState()
+        print(options)
+        with open(self.OPTIONS_INFO_FILE, 'w') as fp:
+            json.dump(options, fp)
+        
+        
         # if view is checked open tableWindow    
         if self.openInView.checkState() == 2:    
             self.table = tableWindow(self, self.INFO['data_file'])
@@ -423,12 +431,7 @@ class mainWindow(QtWidgets.QMainWindow):
                 messages.send_warning("Something went wrong ! \nPlease enable 'view' and try again.")
                 return
             
-            # save the state of the view button
-            options = json.load(open(self.OPTIONS_INFO_FILE))
-            options['view'] = self.openInView.checkState()
-            with open(self.OPTIONS_INFO_FILE, 'w') as fp:
-                json.dump(options, fp)
-        
+
     
     def init_Info(self, tmp_file): 
         ''' tableWindow calles this function, when 'Ok' is pressed. The tmp file created by table window is used to initialize
