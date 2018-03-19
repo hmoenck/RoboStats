@@ -611,8 +611,7 @@ class mainWindow(QtWidgets.QMainWindow):
         #check if subregions are in agreement with current world_borders
         if self.checkSubregions() == False: 
             return
-
-        
+      
         options = json.load(open(self.OPTIONS_INFO_FILE))
         
         # read prefered save folder from options file, default is HOME
@@ -623,6 +622,11 @@ class mainWindow(QtWidgets.QMainWindow):
         # open prefered save folder (or HOME) and let user confirm
         results_folder_super = \
              str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", save_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+
+        if results_folder_super == None or len(results_folder_super) == 0:
+            print('saving procedure interrupted')
+            return
+            
         options['save_folder'] = results_folder_super
         
         # save new prefered save folder
