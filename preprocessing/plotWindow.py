@@ -106,6 +106,7 @@ class plotWindow(QtWidgets.QDialog):
             
     def plot_heatmap(self):
         from mpl_toolkits.axes_grid1 import make_axes_locatable
+        bs = 30
         
         keys = list(self.data2plot.keys())
         ax = self.figure.add_subplot(111)
@@ -116,20 +117,20 @@ class plotWindow(QtWidgets.QDialog):
         
 #        x_bins = int((x_max - x_min) / 20.) 
 #        y_bins = int((y_max - y_min) / 20.) 
-        x_bins = np.linspace(x_min, x_max, 21)
-        y_bins = np.linspace(y_min, y_max, 21)
+        x_bins = np.linspace(x_min, x_max, bs+1)
+        y_bins = np.linspace(y_min, y_max, bs+1)
         
-        hist = np.zeros((20, 20))
+        hist = np.zeros((bs, bs))
         
         for i, key in enumerate(keys): 
             
             hist1, x, y = np.histogram2d(self.data2plot[key][0, :], self.data2plot[key][1, :],  bins = [x_bins, y_bins])
             hist += hist1
-            
-        hist /= np.max(hist)
+        
+        # ignore outliers to give a sensible color distribution
+        thresh = np.percentile(hist, 95)
 
-
-        heat = ax.imshow(hist, cmap = 'cool')
+        heat = ax.imshow(hist, cmap = 'cool', vmax = thresh, origin='lower')
         self.figure.colorbar(heat)
         self.canvas.draw()
         
