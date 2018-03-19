@@ -92,7 +92,7 @@ def plot_things(data, folder, agent_names, plot_instructions):
                 data2plot, l = prepare_data(data, 'speed')
                 plot_histogramm(data2plot, '/speed_histgramm.jpg', folder, 'speed', 'frequency')
                 
-            elif plot_instruction.find('Distance') >= 0:
+            elif plot_instruction.find('Distance') >= 0 and (len(agent_names) > 1):
                 data2plot, l = prepare_data(data, 'dist')
                 plot_histogramm(data2plot, '/dist_histgramm.jpg', folder, 'distance', 'frequency')
                 
@@ -106,7 +106,7 @@ def plot_things(data, folder, agent_names, plot_instructions):
                 data2plot, lables = prepare_data(data, 'speed', include_time = True)
                 plot_timelines(data2plot, '/speed_timeline.jpg', folder, lables, 'time', 'speed')
                 
-            elif plot_instruction.find('Distance') >= 0:
+            elif plot_instruction.find('Distance') >= 0 and (len(agent_names) > 1):
                 data2plot, lables = prepare_data(data, 'dist', include_time = True)
                 plot_timelines(data2plot, '/dist_timeline.jpg', folder, lables, 'time', 'distance')
                 
@@ -120,7 +120,7 @@ def plot_things(data, folder, agent_names, plot_instructions):
                 data2plot, l = prepare_data(data, 'speed')
                 plot_boxplot(data2plot, '/speed_boxplot.jpg', folder, 'speed')
                 
-            elif plot_instruction.find('Distance') >= 0:
+            elif plot_instruction.find('Distance') >= 0 and (len(agent_names) > 1):
                 data2plot, l = prepare_data(data, 'dist')
                 plot_boxplot(data2plot, '/dist_boxplot.jpg', folder, 'distance')
         
