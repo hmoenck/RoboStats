@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from stats.correlations import correlation_relative_velocity
-import stats.simple as stats
+from analysis_tools.correlations import correlation_relative_velocity
+import analysis_tools.simple as stats
 import json
 
 #def makeFile(folder, csv_file, info, csv_info, file_names, region = 'Main'): 
