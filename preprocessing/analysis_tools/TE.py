@@ -1,14 +1,13 @@
 import os
-
-
+import sys
 import analysis_tools.entropy_estimators as ee
-#import entropy_estimators as ee
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 def getDT(data): 
+    ''' reads the timestep from the 'seconds' column of currently processed dataframe'''
     df = pd.read_csv(data)
     DT = np.mean(np.diff(df['seconds'].values))
     
@@ -17,10 +16,11 @@ def getDT(data):
 
 
 def getPreprocessedData(dat, frame_step): 
+    ''' reads the desired datafile to a pandas frame and extracts velocity columns. If framestep is
+    nonzero, the data is downsampled.'''
     df = pd.read_csv(dat)
     cols = df.columns
     agent_names = [a[: a.find('_vx')] for a in cols if a.find('_vx') >=0]
-    print(agent_names)
     vels = []
     for an in agent_names: 
         vx = df[an + '_vx'].values
@@ -31,8 +31,6 @@ def getPreprocessedData(dat, frame_step):
             vy = vy[::frame_step]
             print('len vx after downsampling', len(vx))
         vels.append(np.vstack((vx, vy)).T)
-        print(len(vels))
-    #DT = np.mean(np.diff(df['seconds'].values))
     
     return vels, agent_names
 
@@ -40,6 +38,7 @@ def getPreprocessedData(dat, frame_step):
     
 def CreateTEObservables(P0,P1,ds=3,obstype='vel',normalizedvel=False):
     ''' Generates the observable arrays for transfer entropy calculation
+        (adapted from script by Pawel Romanczuk)
 
         Input:
         P0: position vector individual 0, array(timesteps,2)
@@ -88,7 +87,7 @@ def CreateTEObservables(P0,P1,ds=3,obstype='vel',normalizedvel=False):
 def CalcCMIPair(obs0,obs1,lag=1,k=3,t0=0): 
     '''
     Calculates conditional mutual information for a pair of observables in both directions. Calculation
-    uses entropy estimators.
+    uses entropy estimators (adapted from script by Pawel Romanczuk).
     
     Inputs:
     obs0, obs1......vectors of shape (samples, 2) either raw or directed velocity
@@ -118,7 +117,7 @@ def CalcCMIPair(obs0,obs1,lag=1,k=3,t0=0):
     
 def CalcSingleTE(obs0,obs1,results,parameters,i):
     ''' gets called by RunParallelTE. For giben index i a corresponding set of paarmeters is used to
-    call CalcCMIPair. 
+    call CalcCMIPair. (adapted from script by Pawel Romanczuk)
     
     Inputs
     obs0, obs1......vectors of shape (samples, 2) either raw or directed velocity
@@ -132,7 +131,6 @@ def CalcSingleTE(obs0,obs1,results,parameters,i):
     '''
    
     loc_params=parameters[i]
-    print(parameters[i])
     lag = loc_params[0]
     k   = loc_params[1]
     t0  = loc_params[2]
@@ -141,11 +139,13 @@ def CalcSingleTE(obs0,obs1,results,parameters,i):
     results[i,0] = cmi01
     results[i,1] = cmi10
     
-    #global GLOBAL_COUNTER = GLOBAL_COUNTER-1
-    
     return
 
+
 def RunParallelTE(obs0,obs1,parameter_array,threads=1):
+    '''uses multiprocessing to parallelize calculation of TE. Apprently there are some issues with this
+    working on windows'''
+    
     import multiprocessing as mp
     import multiprocessing.managers
     from functools import partial
@@ -165,8 +165,10 @@ def RunParallelTE(obs0,obs1,parameter_array,threads=1):
     pool.join()
 
     return results
+
     
 def write2file(results, lags, filename, folder, name0, name1): 
+    ''' Writes the results of TE calculation to a csv file.'''
     N = len(results)
     
     with open(folder + filename, 'w') as f: 
@@ -177,35 +179,27 @@ def write2file(results, lags, filename, folder, name0, name1):
         
 
 def plot_results(results, lags, filename, folder, name01, name10):  
-    
+    ''' Plots the results of TE calculation and saves the figure.'''
     plt.figure(figsize = (8, 3))
     plt.plot(lags, results[:, 0], label = name01)
     plt.plot(lags, results[:, 1], label = name10)
     plt.ylabel('TE')
     plt.xlabel('lag[s]')
-    plt.legend()
-    
+    plt.legend()    
     plt.savefig(folder +filename)
 
         
-def TE(datafile = 'TE_test_sin.csv', folder = '/home/claudia/Dokumente/Uni/lab_rotation_FU/pyQt/preprocessing/stats', csv_name = '/TE_test_results_sin.csv', img_name = '/TE_test_sin.jpg', start_frame = 18, maxtime = 10, k_te = 3, frame_step = None): 
-    
-    #params
-    #frame_step = 5
-#    start_frame = 18 #original 18
-#    maxtime = 10 # in seconds 
-#    k_te = 3 #original 3
+def TE(datafile, folder, csv_name, img_name, start_frame = 18, maxtime = 10, k_te = 3, frame_step = 0): 
+
     
     DT = getDT(datafile)
     print('dt before downsampling', DT)
-    # goal: calculate frame_step as a function of dt
-    # such that the resulting file has dt' = 0.3
+
     if frame_step == None or int(frame_step) == 0: 
-        print('set to 1')
         frame_step = 1
-        #frame_step = int(np.ceil(0.3 / DT))
     else: 
         frame_step = int(frame_step)
+        
     print('chosen frame_step', frame_step)
     
     
@@ -226,7 +220,6 @@ def TE(datafile = 'TE_test_sin.csv', folder = '/home/claudia/Dokumente/Uni/lab_r
 
     # build param list
     lag_list = np.arange(1,maxlag)
-    #GLOBAL_COUNTER = maxlag
     lag_times = lag_list*DT_prime
     
     parameters_array = np.zeros((len(lag_list),3))
@@ -235,14 +228,20 @@ def TE(datafile = 'TE_test_sin.csv', folder = '/home/claudia/Dokumente/Uni/lab_r
     parameters_array[:,2] = start_frame
     parameters_array = np.int32(parameters_array)
 
-    results = RunParallelTE(obs0,obs1,parameters_array)
+    
+    if sys.platform.find('linux') > -1: 
+        print(sys.platform)
+        results = RunParallelTE(obs0,obs1,parameters_array)
+    else: 
+        results = np.zeros((len(parameters_array), 2))
+        for i in range(len(parameters_array)): 
+            CalcSingleTE(obs0,obs1,results,parameters_array,i)
 
     name01 = an[0] + '->' + an[1]
     name10 = an[1] + '->' + an[0]
 
     write2file(results, lag_times, csv_name, folder, name01, name10)
     plot_results(results, lag_times, img_name, folder, name01, name10)
-    print('Results:\n', results)
 
     return True
 
