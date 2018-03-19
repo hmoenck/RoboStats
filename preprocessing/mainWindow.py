@@ -53,6 +53,7 @@ class mainWindow(QtWidgets.QMainWindow):
         DATE_FORMATS_FILE = 'settings/date_formats.json'
         OPTIONS_INFO_FILE = 'settings/options.json'
         SUBREGIONS_INFO_FILE = 'settings/subregions.json'
+        TE_PARAMS_FILE = 'settings/TE_params.json'
         options = json.load(open(OPTIONS_INFO_FILE))
         
     except FileNotFoundError:
@@ -62,6 +63,7 @@ class mainWindow(QtWidgets.QMainWindow):
         DATE_FORMATS_FILE = twoFoldersup +'settings/date_formats.json'
         OPTIONS_INFO_FILE = twoFoldersup + 'settings/options.json'
         SUBREGIONS_INFO_FILE = twoFoldersup + 'settings/subregions.json'
+        TE_PARAMS_FILE = twoFoldersup + 'settings/TE_params.json'
     
     options = json.load(open(OPTIONS_INFO_FILE))
     TMP_FILE = options['tmp_file']
@@ -525,7 +527,7 @@ class mainWindow(QtWidgets.QMainWindow):
             self.changeCoordsButton.setText('Ok')
             
         elif self.changeCoordsButton.text() == 'Ok':
-        
+            self.checkSubregions()
             for i, b in enumerate(self.WORLD_BORDERS): 
                 l = QtWidgets.QLabel(str(self.INFO[b]))
                 self.Border_sizes[b] = l
@@ -602,6 +604,11 @@ class mainWindow(QtWidgets.QMainWindow):
         #-------------------------------------------------------------------------------------------
         # saving preparation section
         #-------------------------------------------------------------------------------------------   
+        
+        #check if subregions are in agreement with current world_borders
+        self.checkSubregions()
+
+        
         options = json.load(open(self.OPTIONS_INFO_FILE))
         
         # read prefered save folder from options file, default is HOME
@@ -676,17 +683,19 @@ class mainWindow(QtWidgets.QMainWindow):
         # TE section
         #-------------------------------------------------------------------------------------------
         if options['TE']: 
-            TE_done = TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg')
+            te_params = json.load(open(self.TE_PARAMS_FILE))
+            
+            TE_done = TE.TE(results_folder + '/' + time_file, results_folder, '/TE.csv', '/TE.jpg', start_frame = te_params['start_frame'], maxtime = te_params['max_time'], k_te = te_params['k_te'], frame_step = te_params['frame_step'])
             
         #self.progressBar.setValue(70)
         #-------------------------------------------------------------------------------------------
         # Subregions section
         #-------------------------------------------------------------------------------------------
-        subregions = json.load(open(self.SUBREGIONS_INFO_FILE))
+        
         sub_info = {'start_frame':self.INFO['start_frame'], 'stop_frame':self.INFO['stop_frame'],\
                     'start_time':self.INFO['start_time'], 'stop_time':self.INFO['stop_time'],\
                     'agent_names':self.INFO['agent_names'], 'data_file':self.INFO['data_file'], 'filtered':self.INFO['filtered']}
-        
+        subregions = json.load(open(self.SUBREGIONS_INFO_FILE))
         for sub in subregions.keys():
             for wb in self.WORLD_BORDERS:
                 sub_info[wb] = subregions[sub][wb]
@@ -753,6 +762,18 @@ class mainWindow(QtWidgets.QMainWindow):
         self.oW = optionsWindow(self)  
         self.oW.show()                
 
+    def checkSubregions(self): 
+        subregions = json.load(open(self.SUBREGIONS_INFO_FILE))
+        for sub in subregions.keys():
+            for wb in self.WORLD_BORDERS:
+                if (wb.find('min') > -1) and (subregions[sub][wb] < self.INFO[wb]): 
+                    messages.send_warning('Currently selcted Subregions exceed world borders')
+                    return
+                elif (wb.find('max') > -1) and (subregions[sub][wb] > self.INFO[wb]): 
+                    messages.send_warning('Currently selcted Subregions exceed world borders')
+                    return
+                else: 
+                    pass
 
         
     def makeResultsDir(self, base_folder):
