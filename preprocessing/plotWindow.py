@@ -8,16 +8,13 @@ from numpy import random
 import numpy as np
 import sys
 import sip
-
 import matplotlib
 matplotlib.use('Qt5Agg')
 
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
 from matplotlib.figure import Figure
-import matplotlib.patches as patches
-
 import seaborn as sns
 sns.set()
 
@@ -48,15 +45,19 @@ class plotWindow(QtWidgets.QDialog):
         if plot_info1 == 'Trajectory':
             self.plot_trajectory()
             self.canvas.draw()
+        elif plot_info1 == 'Heatmap':
+            self.plot_heatmap()
+            self.canvas.draw()
         elif plot_info1 == 'Timeline':
             self.plot_timeline()
             self.canvas.draw()
-        if plot_info1 == 'Histogramm':
+        elif plot_info1 == 'Histogramm':
             self.plot_histogramm()
             self.canvas.draw()
         elif plot_info1 == 'Boxplot':
             self.plot_boxplot()
             self.canvas.draw()
+        
 
 
 
@@ -102,6 +103,36 @@ class plotWindow(QtWidgets.QDialog):
             ax.set_ylabel('y')
             
             self.canvas.draw()
+            
+    def plot_heatmap(self):
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        bs = 30
+        
+        keys = list(self.data2plot.keys())
+        ax = self.figure.add_subplot(111)
+        x_min = np.min([np.min(self.data2plot[key][0, :]) for key in keys])
+        x_max = np.max([np.max(self.data2plot[key][0, :]) for key in keys])
+        y_min = np.min([np.min(self.data2plot[key][1, :]) for key in keys])
+        y_max = np.max([np.max(self.data2plot[key][1, :]) for key in keys])
+        
+#        x_bins = int((x_max - x_min) / 20.) 
+#        y_bins = int((y_max - y_min) / 20.) 
+        x_bins = np.linspace(x_min, x_max, bs+1)
+        y_bins = np.linspace(y_min, y_max, bs+1)
+        
+        hist = np.zeros((bs, bs))
+        
+        for i, key in enumerate(keys): 
+            
+            hist1, x, y = np.histogram2d(self.data2plot[key][0, :], self.data2plot[key][1, :],  bins = [x_bins, y_bins])
+            hist += hist1
+        
+        # ignore outliers to give a sensible color distribution
+        thresh = np.percentile(hist, 95)
+
+        heat = ax.imshow(hist, cmap = 'cool', vmax = thresh, origin='lower')
+        self.figure.colorbar(heat)
+        self.canvas.draw()
         
     def plot_boxplot(self): 
         keys = list(self.data2plot.keys())

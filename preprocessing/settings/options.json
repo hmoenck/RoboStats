@@ -1,0 +1,1 @@
+{"plot_selection": ["none"], "plot_options": ["Trajectory", "Timeline-Speed", "Timeline-Distance", "Timeline-Angle", "Histogramm-Speed", "Histogramm-Distance", "Histogramm-Angle", "Boxplot-Speed", "Boxplot-Distance"], "data_folder": "", "save_folder": "", "view": 0, "tmp_file": "tmp.csv", "info_file": "info.csv", "timeline_file": "timelines.csv", "TE": 2}

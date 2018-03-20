@@ -3,11 +3,8 @@ import pandas as pd
 from collections import Counter
 import json
 from scipy.stats import mode
-import stats.simple as simple
+import analysis_tools.simple as simple
 
-# when calculating speed or velocity check for  long sequences of zeros, this might indicate measure problems. suggest to omit the respective frames
-
-# build dict with single value stats!
 
 def speed_and_dist(filename, info, csv_info_file, param_info_file): 
     '''This function gets called by the ok button in tableWindow. It calculates seconds from the chosen 
@@ -95,10 +92,12 @@ def get_seconds_from_time(timestamps, time_format):
 
     if time_format == 'dt': #datetime format up to seconds precision
         print('convert dt to s ')
+
         c = np.array(list(Counter(timestamps).values())) # count how often the same timestamp appears
         FPS = mode(c)[0][0]
         DT = 1./FPS
         seconds = np.arange(0., len(timestamps)*DT, DT)
+        seconds = seconds[:len(timestamps)]
         return seconds, DT, FPS
         
     elif time_format == 'ms': 

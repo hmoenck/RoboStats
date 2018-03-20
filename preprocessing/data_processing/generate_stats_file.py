@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
-from stats.correlations import correlation_relative_velocity
-import stats.simple as stats
+from analysis_tools.correlations import correlation_relative_velocity
+import analysis_tools.simple as stats
 import json
 
-def makeFile(folder, csv_file, info, csv_info, file_names): 
-    # TODO single values is missing, conatned only whole trajectory length
+#def makeFile(folder, csv_file, info, csv_info, file_names, region = 'Main'): 
+def makeFile(folder, df, info, csv_info, file_names, region = 'Main'): 
 
     file_info = json.load(open(file_names))
     INFO_FILE = file_info['info_file']
@@ -18,11 +18,12 @@ def makeFile(folder, csv_file, info, csv_info, file_names):
     
     with open(name, 'w') as f: 
         
-        df = pd.read_csv(csv_file, header = 0, sep = sep)
+        #df = pd.read_csv(csv_file, header = 0, sep = sep)
         cols = df.columns
         dt = np.gradient(df['seconds'].values)
 
         data_name = info['data_file'][info['data_file'].rfind('/')+1:]
+        f.write('Region,'+ region + '\n')
         f.write('Source,' + data_name + '\n')
         f.write('x_min,' + str(info['x_min']) + '\n')
         f.write('x_max,' + str(info['x_max']) + '\n')

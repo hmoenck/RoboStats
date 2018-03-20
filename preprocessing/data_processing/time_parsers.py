@@ -35,14 +35,20 @@ def handle_datetime(timestamp, date_format_file):
     ''' this function tries to convert a given string to datetime format using default formats 
     specified in the settings file'''
     
+    # Format of old BioTracker data
+    if isinstance(timestamp, str) and timestamp[0] == "'" and timestamp[-1] == "'":
+        timestamp = timestamp[1:-1]
+
     date_formats = json.load(open(date_format_file))
     dt = None
     
-    for loc, form in date_formats.items(): 
+    for key in date_formats: 
+        form = date_formats[key][0]
+        loc = date_formats[key][1]
         try: 
             locale.setlocale(locale.LC_ALL, loc)
             dt = datetime.strptime(timestamp, form)
         except (ValueError, TypeError) as error:
-            pass
-        
+            pass    
+
     return dt

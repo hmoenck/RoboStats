@@ -10,6 +10,9 @@ def makeData2Plot(df, representation, datatype, info, params):
 
     if representation == 'Trajectory': 
         data2plot = {an : np.vstack((df[an +'_x'], df[an +'_y'])) for an in info['agent_names']}
+    
+    elif representation == 'Heatmap': 
+        data2plot = {an : np.vstack((df[an +'_x'], df[an +'_y'])) for an in info['agent_names']}
         
     elif representation == 'Timeline': 
         if datatype == 'Speed': 
