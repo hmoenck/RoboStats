@@ -1,12 +1,1 @@
-{
-	"agent_specifications": ["_x", "_y", "_angle"], 
-	"other": [], 
-	"agent_x": "7", 
-	"time": "2", 
-	"agent_y": "8", 
-	"time_labels": ["frames", "time"], 
-	"frames": 1, 
-	"agent_names": ["agent"], 
-	"info": {"angle": "deg", "time": "ms"}, 
-	"agent_angle": "9"
-}
+{"agent_names": ["agent0", "agent1"], "time_labels": ["frames", "time"], "agent_specifications": ["_x", "_y", "_angle"], "other": [], "info": {"angle": "deg", "time": "ms"}, "frames": 1, "time": "2", "agent0_x": "7", "agent1_x": "19", "agent0_y": "8", "agent1_y": "20", "agent0_angle": "9", "agent1_angle": "21"}
