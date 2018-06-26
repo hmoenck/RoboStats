@@ -13,9 +13,17 @@ def distance(x0, y0, x1, y1):
     d = np.sqrt((x0 - x1)**2 + (y0 - y1)**2)    
     return d
     
-def trajectory_length(s, dt): 
-    '''calculates total length of trajectory from speed and dt '''
-    return(sum(s*dt))
+#def trajectory_length(s, dt): 
+#    '''calculates total length of trajectory from speed and dt '''
+#    return(sum(s*dt))
+    
+def trajectory_length(x, y): 
+    '''calculates the length of agents trajectory from x and y position vector'''    
+    xx = np.diff(x)
+    yy = np.diff(y)
+
+    tra = np.sum(np.sqrt(xx**2 + yy**2))
+    return tra    
     
 def time_close(dist, max_dist, dt, percent = False):
     '''calculates the amount of time two agents were closer than a given threshold. 

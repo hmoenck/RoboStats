@@ -38,9 +38,11 @@ def makeFile(folder, df, info, csv_info, file_names, region = 'Main'):
         for agent in info['agent_names']: 
             
             speed = df[agent + '_speed'].values
-            
+            x = df[agent + '_x'].values
+            y = df[agent + '_y'].values
             # claculate length of trajectory
-            trajectory = stats.trajectory_length(speed, dt)
+            #trajectory = stats.trajectory_length(speed, dt) #this is an old deprecated version
+            trajectory = stats.trajectory_length(x, y)
             f.write('trajectory_length' + str(agent) + sep + str(trajectory) + '\n')
 
             # calculate speed statistics
